@@ -1,0 +1,254 @@
+
+---
+title: "Complete Soil Data Access (SDA) + SQL Training"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+code-link: true
+filters: []
+---
+
+# Soil Data Access (SDA) + SQL Training
+
+> **Purpose:** Complete, single-file SDA training document covering SQL fundamentals, SDA service usage, spatial/AOI workflows, SDMOnline vs SSURGO, and embedded SDA SQL Library examples.
+
+---
+
+## 1. Authoritative SDA Documentation
+
+- SDA Query Help: https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx
+- SDA Query Guide (PDF): https://sdmdataaccess.nrcs.usda.gov/documents/SoilDataAccessQueryGuide.pdf
+- Tables & Columns Report: https://sdmdataaccess.nrcs.usda.gov/documents/TablesAndColumnsReport.pdf
+- Table Relationships Report: https://sdmdataaccess.nrcs.usda.gov/documents/TableRelationshipsReport.pdf
+- Web Service Help (Tabular/post.rest): https://sdmdataaccess.nrcs.usda.gov/WebServiceHelp.aspx
+- SSURGO Portal User Guide: https://www.nrcs.usda.gov/sites/default/files/2023-10/SSURGO%20Portal%20User%20Guide.pdf
+- Soil Data Viewer 6.2 User Guide: https://www.nrcs.usda.gov/sites/default/files/2022-09/Soil-Data-Viewer-6-2-User-Guide.pdf
+
+---
+
+## 2. SDMOnline vs. SSURGO
+
+### SSURGO
+- Public authoritative dataset (tabular + spatial)
+- Accessed via WSS, SDA, and SSURGO Portal
+
+### SDMOnline
+- Internal operational mirror used by DS Hub pipelines
+- Includes views with prefixes/suffixes like: `sdmonline.<table>_vw`, `sdmonline.<table>_mv`
+- Refreshed when `sacatalog` changes
+- Used when backend services or spatial engines need real-time SSURGO-like content
+
+**Bottom line:** Use **SSURGO** for authoritative public products; use **SDMOnline** for internal operational pipelines.
+
+---
+
+## 3. SDA Schema Reference (Join Path)
+
+```text
+legend (lkey)
+  └── mapunit (mukey)
+        ├── component (cokey)
+        │     └── chorizon (chkey)
+        └── muaggatt (mukey)
+```
+
+---
+
+## 4. Calling SDA Tabular Services Over HTTP
+
+### cURL
+```bash
+curl -X POST \
+  "https://sdmdataaccess.sc.egov.usda.gov/Tabular/post?format=json+columnname" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "query=SELECT TOP 5 mukey, musym, muname FROM mapunit"
+```
+
+### PowerShell
+```powershell
+$uri = "https://sdmdataaccess.sc.egov.usda.gov/Tabular/post?format=json+columnname"
+$q   = "SELECT TOP 5 mukey, musym, muname FROM mapunit"
+Invoke-RestMethod -Method Post -Uri $uri -Body @{ query = $q }
+```
+
+### Python
+```python
+import requests
+uri = "https://sdmdataaccess.sc.egov.usda.gov/Tabular/post?format=json+columnname"
+q = "SELECT TOP 5 mukey, musym, muname FROM mapunit"
+resp = requests.post(uri, data={"query": q})
+print(resp.json())
+```
+
+---
+
+## 5. Immediate vs Queued Mode
+
+- Immediate: ≈ 10k rows, ≈ 30 sec
+- Queued: Larger datasets packaged asynchronously
+
+Always scope queries using:
+- `WHERE` filters
+- `TOP/LIMIT`
+- Chunked MUKEY/areasymbol lists
+
+---
+
+## 6. SDA Training SQL Examples
+
+### Legend → Mapunit → Component
+```sql
+SELECT lg.areasymbol, lg.areaname,
+       mu.mukey, mu.musym, mu.muname,
+       c.cokey, c.compname, c.comppct_r, c.hydgrp
+FROM legend AS lg
+JOIN mapunit AS mu ON lg.lkey = mu.lkey
+JOIN component AS c ON mu.mukey = c.mukey
+WHERE lg.areasymbol LIKE 'CO%'
+ORDER BY mu.mukey, c.comppct_r DESC;
+```
+
+### Hydrologic Soil Group (% of MUKEY)
+```sql
+WITH comp AS (
+  SELECT mu.mukey, c.hydgrp, c.comppct_r
+  FROM legend lg
+  JOIN mapunit mu ON lg.lkey = mu.lkey
+  JOIN component c ON mu.mukey = c.mukey
+  WHERE lg.areasymbol LIKE 'CO%'
+)
+SELECT mukey, hydgrp, SUM(comppct_r) AS percent
+FROM comp
+GROUP BY mukey, hydgrp;
+```
+
+### AOI MUKEY list → muaggatt
+```sql
+SELECT mu.mukey, mu.musym, mu.muname, ma.*
+FROM mapunit mu
+JOIN muaggatt ma ON mu.mukey = ma.mukey
+WHERE mu.mukey IN (123456, 234567);
+```
+
+---
+
+## 7. SDA SQL Library: GIS + Spatial Intersects
+
+### MUKEY + Component (GIS Join)
+```sql
+SHAPE {
+  SELECT musym, muname, mukey
+  FROM legend AS l
+  INNER JOIN mapunit AS mu ON l.lkey = mu.lkey
+  WHERE areasymbol = 'NE079'
+  ORDER BY museq
+}
+APPEND (
+  {
+    SELECT mu.mukey, comppct_r, compname
+    FROM legend AS l
+    INNER JOIN mapunit AS mu ON l.lkey = mu.lkey
+    LEFT OUTER JOIN component AS c ON mu.mukey = c.mukey
+    WHERE areasymbol = 'NE079'
+  } AS component RELATE mukey TO mukey
+);
+```
+
+### Point Intersect (WGS84)
+```sql
+SELECT mukey, muname
+FROM mapunit
+WHERE mukey IN (
+  SELECT *
+  FROM SDA_Get_Mukey_from_intersection_with_WktWgs84 ('point (-121.77100 37.368402)')
+);
+```
+
+### Polygon AOI Intersect (STPolyFromText)
+```sql
+~DeclareGeometry (@aoi)~
+SELECT @aoi = geometry::STPolyFromText('polygon ((...))', 4326);
+~DeclareIdGeomTable (@intersectedGeo)~
+~GetClippedMapunits (@aoi, polygon, geo, @intersectedGeo)~
+```
+
+---
+
+## 8. SDA SQL Library: Interpretations
+
+### List interpretations for a survey
+```sql
+SELECT DISTINCT ci.mrulename, ci.ruledepth
+FROM legend AS l
+JOIN mapunit AS m ON l.lkey = m.lkey
+JOIN component AS c ON m.mukey = c.mukey
+JOIN cointerp AS ci ON c.cokey = ci.cokey
+WHERE l.areasymbol LIKE 'MI003'
+ORDER BY ci.mrulename;
+```
+
+### Interpretation restrictions (dominant component)
+```sql
+SELECT areasymbol, musym, mapunit.mukey, muname,
+       compname, comppct_r, majcompflag,
+       cointerp.mrulename, interphr, interphrc
+FROM legend
+JOIN mapunit ON legend.lkey = mapunit.lkey
+JOIN component ON mapunit.mukey = component.mukey
+JOIN cointerp ON component.cokey = cointerp.cokey
+WHERE legend.areasymbol = 'KS169'
+  AND majcompflag = 'Yes'
+  AND ruledepth = 0;
+```
+
+---
+
+## 9. SDA SQL Library: Query Parts (Window Functions)
+
+```sql
+-- Dominant component class via windowed SUM
+SELECT TOP 1 interphrc
+FROM mapunit AS m2
+JOIN component AS c2 ON c2.mukey = m2.mukey
+JOIN cointerp AS ci2 ON c2.cokey = ci2.cokey
+WHERE m2.mukey = mu.mukey AND ruledepth = 0
+GROUP BY interphrc, comppct_r
+ORDER BY SUM(comppct_r) OVER (PARTITION BY interphrc) DESC;
+```
+
+---
+
+## 10. SOC Weighted‑Mean (mapunit‑level)
+
+See full examples in GitHub: https://github.com/ncss-tech/sda-lib
+
+```sql
+SELECT areasymbol, mapunit.mukey, mapunit.musym,
+       (SELECT TOP 1 taxorder
+        FROM component
+        WHERE component.mukey = mapunit.mukey
+        GROUP BY taxorder, comppct_r
+        ORDER BY SUM(comppct_r) OVER (PARTITION BY taxorder) DESC) AS dominant_taxorder
+FROM legend
+JOIN mapunit ON legend.lkey = mapunit.lkey
+WHERE LEFT(areasymbol,2) = 'WI';
+```
+
+---
+
+## 11. Training Agenda
+
+1. SDA fundamentals
+2. SQL basics
+3. SDA HTTP requests
+4. Spatial/AOI workflows
+5. Interpretations & restrictions
+6. SOC & advanced analytics
+7. Troubleshooting & best practices
+
+---
+
+## 12. Maintainer
+- Jason Nemecek — National Soil Data Applications Scientist
+
