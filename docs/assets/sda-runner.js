@@ -5,33 +5,42 @@
 
 const SDA_URL = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
 
-// Companion repo base — single constant to update if URL ever changes
 const COMPANION_BASE = 'https://jneme910.github.io/NRCS-Soil-Data-Access';
 const COMPANION_SQL_CATALOG = `${COMPANION_BASE}/data/sql-catalog.json`;
+const COMPANION_RUNNER = `${COMPANION_BASE}/sql-runner.html`;
 
-/**
- * POST a SQL query to SDA and return { headers, rows } or throw.
- */
+// ── SDA QUERY ──────────────────────────────────────────────────────────────
 async function runSDAQuery(sql) {
-  const body = new URLSearchParams({ query: sql, format: 'JSON+COLUMNNAME' });
+  const body = new URLSearchParams({ query: sql, format: 'JSON' });
   const resp = await fetch(SDA_URL, { method: 'POST', body });
-  if (!resp.ok) throw new Error(`SDA returned HTTP ${resp.status}`);
+  if (!resp.ok) {
+    let msg = `SDA returned HTTP ${resp.status}`;
+    try { const t = await resp.text(); if (t) msg += ` — ${t.slice(0, 200)}`; } catch {}
+    throw new Error(msg);
+  }
   const data = await resp.json();
-  if (!data.Table || data.Table.length < 2) return { headers: [], rows: [] };
-  const [headers, , ...rows] = data.Table;
+  if (!data.Table || data.Table.length < 1) return { headers: [], rows: [] };
+  const [headers, ...rows] = data.Table;
   return { headers, rows };
 }
 
-/**
- * Wire up a .sql-panel element with run/copy buttons.
- * Expects: <textarea class="sql-editor">, .btn-run, .btn-copy, .sql-result
- */
+// ── SQL PANEL WIRING ───────────────────────────────────────────────────────
 function wireSQLPanel(panel) {
   const textarea = panel.querySelector('.sql-editor');
   const runBtn   = panel.querySelector('.btn-run');
   const copyBtn  = panel.querySelector('.btn-copy');
   const result   = panel.querySelector('.sql-result');
   if (!textarea || !runBtn) return;
+
+  // Inject "Open in Runner" button if not already present
+  let openBtn = panel.querySelector('.btn-open');
+  if (!openBtn) {
+    openBtn = document.createElement('button');
+    openBtn.className = 'btn-open';
+    openBtn.title = 'Open this query in the full Soil Intelligence SQL Runner';
+    openBtn.textContent = '↗ Full Runner';
+    runBtn.insertAdjacentElement('afterend', openBtn);
+  }
 
   runBtn.addEventListener('click', async () => {
     const sql = textarea.value.trim();
@@ -76,14 +85,21 @@ function wireSQLPanel(panel) {
       });
     });
   }
+
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      const sql = textarea.value.trim();
+      if (!sql) return;
+      window.open(`${COMPANION_RUNNER}?sql=${encodeURIComponent(sql)}`, '_blank');
+    });
+  }
 }
 
-/** Wire all .sql-panel elements on the page */
 function wireAllPanels() {
   document.querySelectorAll('.sql-panel').forEach(wireSQLPanel);
 }
 
-/** Wire lesson expand/collapse */
+// ── LESSON WIRING ──────────────────────────────────────────────────────────
 function wireLessons() {
   document.querySelectorAll('.lesson-header').forEach(header => {
     header.addEventListener('click', () => {
@@ -94,7 +110,6 @@ function wireLessons() {
       if (arrow) arrow.textContent = open ? '▲' : '▼';
     });
   });
-  // Open first lesson by default
   const first = document.querySelector('.lesson-body');
   if (first) {
     first.classList.add('open');
@@ -103,7 +118,47 @@ function wireLessons() {
   }
 }
 
-/** Scroll reveal */
+// ── PROGRESS TRACKING ──────────────────────────────────────────────────────
+const PROGRESS_KEY = 'sda-training-progress';
+const TRACKED_PAGES = ['beginner','intermediate','expert','macros','api-python','api-javascript','query-runner','soil-model'];
+
+function getProgress() {
+  try { return JSON.parse(localStorage.getItem(PROGRESS_KEY) || '{}'); } catch { return {}; }
+}
+
+function markPageVisited() {
+  const page = location.pathname.split('/').pop().replace('.html','');
+  if (!TRACKED_PAGES.includes(page)) return;
+  const p = getProgress();
+  if (!p[page]) {
+    p[page] = { visited: Date.now() };
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
+  }
+}
+
+function renderProgressBar() {
+  const el = document.getElementById('training-progress');
+  if (!el) return;
+  const p = getProgress();
+  const visited = TRACKED_PAGES.filter(pg => p[pg]).length;
+  const total = TRACKED_PAGES.length;
+  const pct = Math.round(visited / total * 100);
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dim)">
+      <div style="flex:1;background:var(--panel2);border-radius:4px;height:6px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:var(--accent);border-radius:4px;transition:width .4s ease"></div>
+      </div>
+      <span style="white-space:nowrap;min-width:80px">${visited} of ${total} topics${visited>0?' explored':''}</span>
+      ${visited>0?`<button onclick="clearProgress()" style="font-size:10px;background:none;border:none;color:var(--dimmer);cursor:pointer;padding:0">reset</button>`:''}
+    </div>`;
+}
+
+function clearProgress() {
+  localStorage.removeItem(PROGRESS_KEY);
+  renderProgressBar();
+}
+
+// ── SCROLL REVEAL ──────────────────────────────────────────────────────────
 function wireReveal() {
   const obs = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('on'); });
@@ -111,7 +166,7 @@ function wireReveal() {
   document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 }
 
-/** SQL syntax highlight (simple) */
+// ── SQL SYNTAX HIGHLIGHT ───────────────────────────────────────────────────
 function highlightSQL(sql) {
   return esc(sql)
     .replace(/(--.*)$/gm, (_, c) => `<span class="co">${c}</span>`)
@@ -125,7 +180,7 @@ function esc(s) {
   return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-/** Try to load companion SQL catalog with graceful fallback */
+// ── COMPANION CATALOG ─────────────────────────────────────────────────────
 async function loadCompanionCatalog() {
   try {
     const r = await fetch(COMPANION_SQL_CATALOG, { signal: AbortSignal.timeout(5000) });
@@ -134,9 +189,11 @@ async function loadCompanionCatalog() {
   return null;
 }
 
-// Auto-wire on DOMContentLoaded
+// ── AUTO-WIRE ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   wireAllPanels();
   wireLessons();
   wireReveal();
+  markPageVisited();
+  renderProgressBar();
 });

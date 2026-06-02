@@ -107,6 +107,10 @@ ORDER BY muacres DESC</textarea>
           Browse 254 production scripts at the
           <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank" style="color:var(--accent)">SQL Explorer ↗</a>
         </div>
+        <div id="history-wrap" style="margin-top:14px;display:none">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soil);margin-bottom:6px">Recent Queries</div>
+          <div id="history-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -242,6 +246,54 @@ const ta  = document.getElementById('sql-ta');
 const sel = document.getElementById('example-select');
 const btn = document.getElementById('run-btn');
 
+// Load query from ?sql= URL param (linked from training lessons)
+const _urlSql = new URLSearchParams(location.search).get('sql');
+if (_urlSql) { ta.value = _urlSql; }
+
+// ── QUERY HISTORY ──────────────────────────────────────────────────────────
+const HISTORY_KEY = 'sda-query-history';
+const HISTORY_MAX = 10;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); } catch { return []; }
+}
+
+function saveToHistory(sql) {
+  let hist = loadHistory().filter(h => h.sql !== sql);
+  hist.unshift({ sql, ts: Date.now() });
+  hist = hist.slice(0, HISTORY_MAX);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+  renderHistory();
+}
+
+function renderHistory() {
+  const hist = loadHistory();
+  const wrap = document.getElementById('history-wrap');
+  const list = document.getElementById('history-list');
+  if (!hist.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = hist.map((h, i) => {
+    const preview = h.sql.replace(/\s+/g,' ').trim().slice(0, 50);
+    const age = _histAge(h.ts);
+    return `<div style="padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:11px"
+      onclick="ta.value=loadHistory()[${i}].sql"
+      onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color=''">
+      <div style="color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${preview}…</div>
+      <div style="font-size:9px;color:var(--dimmer);margin-top:2px">${age}</div>
+    </div>`;
+  }).join('');
+}
+
+function _histAge(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  return Math.floor(s/86400) + 'd ago';
+}
+
+renderHistory();
+
 sel.addEventListener('change', () => {
   if (EXAMPLES[sel.value]) { ta.value = EXAMPLES[sel.value]; sel.value = ''; }
 });
@@ -277,6 +329,7 @@ btn.addEventListener('click', async () => {
     const data = await resp.json();
     btn.disabled = false;
     btn.innerHTML = '▶ Run Query';
+    saveToHistory(sql);
 
     if (!data.Table || data.Table.length < 1) {
       ra.innerHTML = '<div id="result-status" class="st-ok">✓ Query executed — 0 rows returned</div>';
