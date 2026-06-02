@@ -825,7 +825,7 @@ select @interpresultid [interpresultid], @message [message]</textarea>
   <div class="section-inner">
     <div class="eyebrow">Reference</div>
     <h2 class="section-h2">Official <em>Documentation</em></h2>
-    <p class="lead">Primary sources from the USDA NRCS Soil Data Access team.</p>
+    <p class="lead">Primary sources from the USDA Soil Data Access team.</p>
     <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
       <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedQueries.html" target="_blank" rel="noopener" class="card" style="text-decoration:none;border-left:3px solid var(--accent2)">
         <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:8px">Primary Reference</div>
@@ -842,7 +842,7 @@ select @interpresultid [interpresultid], @message [message]</textarea>
       <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" rel="noopener" class="card" style="text-decoration:none;border-left:3px solid var(--green)">
         <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Live Interface</div>
         <h3>SDA Query Interface</h3>
-        <p>The only place to run multi-step macro queries that use temp tables and session state — required for pAOI-based workflows.</p>
+        <p>Run macro queries, multi-step pAOI workflows, and queries using temp tables — the full SDA query interface.</p>
         <span style="font-size:11px;color:var(--green)">Open SDA ↗</span>
       </a>
       <a href="query-runner.html" class="card" style="text-decoration:none;border-left:3px solid var(--accent)">
@@ -852,14 +852,12 @@ select @interpresultid [interpresultid], @message [message]</textarea>
         <span style="font-size:11px;color:var(--accent)">Open Query Lab →</span>
       </a>
     </div>
-    <div class="note" style="margin-top:24px">
-      <strong>Note on macros &amp; temp tables:</strong> Macro queries and multi-step pAOI workflows use SQL Server session state and cannot run through a stateless REST call. Use the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> or the SSMS-connected <code>sdmOnline</code> database for these queries. Single <code>SELECT</code> queries run fine in the Query Lab above.
-    </div>
+    
   </div>
 </section>
 
 <footer>
-  <p>Soil Data Access Training Resources · USDA NRCS SSURGO · Built with real soil data</p>
+  <p>Soil Data Access Training Resources · USDA SSURGO · Built with real soil data</p>
   <p style="margin-top:8px">
     <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a> ·
     <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> ·
@@ -904,7 +902,7 @@ document.querySelectorAll('.btn-run').forEach(btn=>{
       try{data=JSON.parse(text);}
       catch{
         const msg=(text.match(/<Message>([\s\S]*?)<\/Message>/i)||[])[1]||'SDA returned a non-JSON response';
-        res.innerHTML=`<div class="result-err">✗ ${msg.trim()}<br><small>Complex macro queries require the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA query interface</a>.</small></div>`;
+        res.innerHTML=`<div class="result-err">✗ ${msg.trim()}<br><small>Check your SQL syntax or try the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA query interface</a>.</small></div>`;
         return;
       }
       if(!data.Table||data.Table.length<2){

@@ -47,7 +47,6 @@
       <span class="lesson-expand">▼</span>
     </div>
     <div class="lesson-body">
-      <div class="warn"><strong>Note:</strong> <code>#temp tables</code>, <code>CREATE TABLE</code>, and <code>INSERT INTO</code> do NOT work in the SDA REST API (<code>/Tabular/post.rest</code>). They run in SQL Server Management Studio (SSMS). The query below uses CTEs as a fully SDA-compatible equivalent.</div>
       <p>Temp tables break complex SSURGO queries into stages: first gather the map units (#map), then the components (#comp), then the horizons (#horizon) — each step building on the last. CTEs achieve the same result and work in SDA.</p>
       <div class="sql-panel">
         <div class="sql-toolbar">

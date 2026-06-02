@@ -211,9 +211,7 @@ ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
     </div>
     <div class="card" style="border-left:3px solid var(--orange)">
       <h3 style="color:var(--orange)">3. Temp tables in SDA REST</h3>
-      <p>The SDA <code>/Tabular/post.rest</code> endpoint does not support <code>#temp tables</code>, <code>CREATE TABLE</code>, or <code>INSERT INTO</code>. These require SQL Server Management Studio. Use CTEs (<code>WITH ... AS</code>) instead — they work identically in SDA.</p>
-      <div class="note" style="margin-top:8px"><strong>Alternative:</strong> Use the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> for multi-step temp table scripts.</div>
-    </div>
+      </div>
     <div class="card" style="border-left:3px solid var(--orange)">
       <h3 style="color:var(--orange)">4. NULL AWC values in calculations</h3>
       <p>Horizon AWC (<code>awc_r</code>) can be NULL for organic surface layers, bedrock, and water features. A raw multiplication will return NULL for the entire horizon sum.</p>
@@ -231,7 +229,7 @@ ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
     <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/data-models.html" target="_blank" rel="noopener" class="companion-box card" style="text-decoration:none">
       <span class="companion-icon">🔗</span>
       <div class="companion-body">
-        <div class="label">NRCS Companion</div>
+        <div class="label">Companion</div>
         <strong>Interactive ER Diagram</strong>
         <span>134 tables · D3 force layout · Domain decoder · Sort by any field</span>
       </div>

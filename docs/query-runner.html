@@ -101,12 +101,11 @@ ORDER BY muacres DESC</textarea>
             <li>Always use <code>TOP N</code> to limit large results</li>
             <li><code>Ctrl+Enter</code> runs the query</li>
             <li>Temp tables (<code>#table</code>) don't work via REST — use CTEs</li>
-            <li>Need temp tables? Try <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" style="color:var(--accent)">SDA Query Interface ↗</a></li>
-          </ul>
+            </ul>
         </div>
         <div style="margin-top:20px;font-size:.8rem;color:var(--dimmer)">
           Browse 254 production scripts at the
-          <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank" style="color:var(--accent)">NRCS SQL Explorer ↗</a>
+          <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank" style="color:var(--accent)">SQL Explorer ↗</a>
         </div>
       </div>
     </div>
@@ -298,9 +297,7 @@ btn.addEventListener('click', async () => {
     ra.innerHTML = `<div id="result-status" class="st-err">
       ✗ ${e.message}<br>
       <small style="display:block;margin-top:6px;color:var(--dim)">
-        Queries using #temp tables require <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" style="color:var(--accent)">SDA Query Interface ↗</a>
-      </small>
-    </div>`;
+        Queries with syntax errors will show the server error message.</div>`;
   }
 });
 </script>
