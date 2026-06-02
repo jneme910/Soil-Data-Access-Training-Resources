@@ -159,8 +159,48 @@ footer a:hover{color:var(--soil)}
 .companion-body span{font-size:.8rem;color:var(--dim)}
 .companion-arrow{margin-left:auto;color:var(--dim);font-size:1.2rem;flex-shrink:0}
 
+/* ── MOBILE RESPONSIVE ─────────────────────────────────────────── */
 @media(max-width:768px){
-  .section,.section-inner{padding:48px 20px}
-  #nav{padding:0 12px}
-  .hero{padding:56px 20px 40px}
+  .section,.section-inner{padding:40px 16px}
+  .hero{padding:48px 16px 32px}
+
+  /* Nav: hide overflow links, keep logo + active */
+  #nav{padding:0 12px;gap:4px}
+  .nav-link:not(.active):not(.hot){display:none}
+  /* Allow horizontal scroll on nav as fallback */
+  #nav{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* SQL panels: stack vertically */
+  .sql-panel{margin:12px 0}
+  .sql-toolbar{flex-wrap:wrap;gap:6px;padding:8px 10px}
+  .sql-toolbar-label{width:100%;order:-1}
+  .sql-editor{font-size:11px;min-height:120px}
+
+  /* Code blocks: horizontal scroll, never wrap */
+  pre,code,.sql-editor{white-space:pre;overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* Result tables: scroll horizontally */
+  .sql-result{overflow-x:auto}
+  .result-table{min-width:400px}
+
+  /* Lesson panels */
+  .lesson-header{padding:12px 14px}
+  .lesson-body{padding:12px 14px}
+
+  /* Cards/grids: single column */
+  .card-grid,.curriculum-grid,.track-grid{grid-template-columns:1fr!important}
+
+  /* Reduce font sizes slightly */
+  .hero h1{font-size:clamp(22px,6vw,32px)}
+  .lead{font-size:13px}
+}
+
+/* Query runner: stack panes on mobile */
+@media(max-width:600px){
+  html,body{height:auto!important;overflow:auto!important}
+  #shell{height:auto!important}
+  #panes{flex-direction:column!important;height:auto!important;overflow:visible!important}
+  #left{width:100%!important;flex-shrink:unset!important;height:auto}
+  #sql-ta{min-height:180px;resize:vertical}
+  #right{min-height:300px;overflow-y:visible}
 }
