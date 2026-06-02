@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Query Lab — Live SDA Sandbox</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+html,body{height:100%;overflow:hidden}
+#shell{display:flex;flex-direction:column;height:100vh}
+#panes{flex:1;display:flex;overflow:hidden}
+#left{width:400px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+#right{flex:1;overflow-y:auto;background:var(--panel2)}
+#left-top{padding:14px 16px;border-bottom:1px solid var(--border)}
+#example-select{width:100%;padding:8px 10px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:11px;font-family:var(--font);outline:none;cursor:pointer;margin-bottom:10px}
+#example-select option{background:var(--panel2)}
+#sql-ta{flex:1;background:#020408;color:#7dd3fc;font-family:'Courier New',monospace;font-size:12.5px;padding:14px 16px;border:none;outline:none;resize:none;line-height:1.75;width:100%}
+#run-bar{padding:10px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--panel3)}
+#run-btn{flex:1;padding:9px;background:var(--accent);color:#000;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)}
+#run-btn:hover{background:#7dd3fc}
+#run-btn:disabled{opacity:.5;cursor:not-allowed}
+#copy-btn,#clear-btn{padding:9px 14px;background:var(--panel2);border:1px solid var(--border);color:var(--dim);border-radius:6px;font-size:12px;cursor:pointer;font-family:var(--font)}
+#copy-btn:hover,#clear-btn:hover{border-color:var(--border2);color:var(--text)}
+#result-area{padding:16px}
+#result-status{padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.st-ok{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+.st-err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.st-wait{background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);color:var(--accent)}
+#result-table-wrap{overflow-x:auto;border-radius:6px;border:1px solid var(--border)}
+#result-table{width:100%;border-collapse:collapse;font-size:11px}
+#result-table th{background:var(--panel3);color:var(--dim);padding:7px 12px;text-align:left;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;position:sticky;top:0;border-bottom:1px solid var(--border)}
+#result-table td{padding:6px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+#result-table tr:hover td{background:var(--panel2)}
+#empty-state{text-align:center;padding:80px 20px;color:var(--dim)}
+#empty-state .ei{font-size:2.5rem;margin-bottom:14px}
+#row-count{font-size:10px;color:var(--dimmer);margin-top:8px;text-align:right}
+</style>
+</head>
+<body>
+<div id="shell">
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link active" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-runner.html" target="_blank" rel="noopener" style="color:var(--soil)">Full Runner ↗</a>
+</nav>
+
+<div id="panes">
+  <div id="left">
+    <div id="left-top">
+      <div style="font-family:var(--serif);font-size:1rem;color:#fff;margin-bottom:6px">Live SDA Query Lab</div>
+      <div style="font-size:10px;color:var(--dim);margin-bottom:10px">Write SQL → run against the real SDA API</div>
+      <select id="example-select">
+        <option value="">— Load an example query —</option>
+        <option value="hello">Hello World — Top 10 Map Units</option>
+        <option value="survey">Survey Areas in Iowa</option>
+        <option value="domcomp">Dominant Component — WI025</option>
+        <option value="om">Organic Matter by Drainage Class</option>
+        <option value="aws">Available Water Storage — WI025</option>
+        <option value="nccpi">NCCPI Productivity — ND001</option>
+        <option value="fsi">Fragile Soil Index — IA025</option>
+        <option value="horizon">Full Horizon Profile — WI025</option>
+      </select>
+    </div>
+    <textarea id="sql-ta" spellcheck="false">-- Welcome to the SDA Query Lab
+-- Select an example above or write your own SQL
+-- Press ▶ Run Query or Ctrl+Enter to execute
+
+SELECT TOP 10
+  mukey,
+  musym    AS symbol,
+  muname   AS name,
+  muacres  AS acres
+FROM mapunit
+ORDER BY muacres DESC</textarea>
+    <div id="run-bar">
+      <button id="run-btn">▶ Run Query</button>
+      <button id="copy-btn">Copy</button>
+      <button id="clear-btn">Clear</button>
+    </div>
+  </div>
+
+  <div id="right">
+    <div id="result-area">
+      <div id="empty-state">
+        <div class="ei">⚗️</div>
+        <div style="font-family:var(--serif);font-size:1.2rem;color:#fff;margin-bottom:8px">Query Lab</div>
+        <p>Write SQL in the left pane and click <strong style="color:var(--accent)">▶ Run Query</strong> to execute against the live SDA REST API.</p>
+        <div style="margin-top:24px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:16px 20px;text-align:left;font-size:.85rem;max-width:480px;margin-left:auto;margin-right:auto">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soil);margin-bottom:8px">Tips</div>
+          <ul style="color:var(--dim);line-height:2.2;padding-left:18px">
+            <li>Always use <code>TOP N</code> to limit large results</li>
+            <li><code>Ctrl+Enter</code> runs the query</li>
+            <li>Temp tables (<code>#table</code>) don't work via REST — use CTEs</li>
+            <li>Need temp tables? Try <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" style="color:var(--accent)">SDA Query Interface ↗</a></li>
+          </ul>
+        </div>
+        <div style="margin-top:20px;font-size:.8rem;color:var(--dimmer)">
+          Browse 254 production scripts at the
+          <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank" style="color:var(--accent)">NRCS SQL Explorer ↗</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const SDA = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
+const EXAMPLES = {
+  hello: `SELECT TOP 10
+  mukey,
+  musym    AS symbol,
+  muname   AS name,
+  muacres  AS acres
+FROM mapunit
+ORDER BY muacres DESC`,
+  survey: `SELECT
+  areasymbol,
+  areaname
+FROM legend
+WHERE areasymbol LIKE 'IA%'
+ORDER BY areasymbol`,
+  domcomp: `SELECT TOP 25
+  mu.musym       AS symbol,
+  mu.muname      AS map_unit_name,
+  c.compname     AS dominant_soil,
+  c.comppct_r    AS soil_pct,
+  c.taxclname    AS taxonomy,
+  c.drainagecl   AS drainage
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+WHERE l.areasymbol  = 'WI025'
+  AND c.majcompflag = 'Yes'
+ORDER BY mu.musym, c.comppct_r DESC`,
+  om: `SELECT
+  c.drainagecl,
+  COUNT(DISTINCT c.cokey)      AS component_count,
+  ROUND(AVG(ch.om_r), 2)       AS avg_surface_om_pct,
+  ROUND(MIN(ch.om_r), 2)       AS min_om,
+  ROUND(MAX(ch.om_r), 2)       AS max_om
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol LIKE 'IA%'
+  AND c.majcompflag = 'Yes'
+  AND ch.hzdept_r   = 0
+  AND ch.om_r IS NOT NULL
+GROUP BY c.drainagecl
+ORDER BY avg_surface_om_pct DESC`,
+  aws: `SELECT TOP 20
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ROUND(SUM(
+    CASE
+      WHEN ch.hzdepb_r <= 150
+        THEN (ch.hzdepb_r - ch.hzdept_r) * ISNULL(ch.awc_r, 0)
+      WHEN ch.hzdept_r < 150
+        THEN (150 - ch.hzdept_r) * ISNULL(ch.awc_r, 0)
+      ELSE 0
+    END
+  ), 2) AS aws_0_150cm_inches
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol  = 'WI025'
+  AND c.majcompflag = 'Yes'
+GROUP BY mu.musym, mu.muname, c.compname, c.comppct_r
+ORDER BY aws_0_150cm_inches DESC`,
+  nccpi: `SELECT TOP 25
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ci.mrulename,
+  ci.interphrc         AS rating_class,
+  ROUND(ci.interphr, 3) AS numeric_rating
+FROM legend l
+INNER JOIN mapunit  mu ON mu.lkey  = l.lkey
+INNER JOIN component c ON c.mukey  = mu.mukey
+INNER JOIN cointerp ci ON ci.cokey = c.cokey
+WHERE l.areasymbol  = 'ND001'
+  AND c.majcompflag = 'Yes'
+  AND ci.ruledepth  = 0
+  AND ci.mrulename LIKE 'NCCPI%'
+ORDER BY ci.interphr DESC`,
+  fsi: `SELECT TOP 30
+  mu.mukey,
+  mu.musym,
+  mu.muname,
+  dom.interphrc         AS fsi_dominant_class,
+  ROUND(dom.sum_pct, 1)  AS dominant_pct
+FROM mapunit mu
+INNER JOIN (
+  SELECT c.mukey, ci.interphrc,
+    SUM(c.comppct_r) AS sum_pct,
+    ROW_NUMBER() OVER (PARTITION BY c.mukey ORDER BY SUM(c.comppct_r) DESC) AS rn
+  FROM component c
+  INNER JOIN cointerp ci ON ci.cokey = c.cokey
+  WHERE ci.mrulename = 'Fragile Soil Index' AND ci.ruledepth = 0
+    AND ci.interphrc IS NOT NULL
+  GROUP BY c.mukey, ci.interphrc
+) dom ON dom.mukey = mu.mukey AND dom.rn = 1
+INNER JOIN legend l ON l.lkey = mu.lkey
+WHERE l.areasymbol = 'IA025'
+ORDER BY dom.sum_pct DESC`,
+  horizon: `SELECT TOP 30
+  mu.musym,
+  c.compname,
+  c.comppct_r,
+  ch.hzname,
+  ch.hzdept_r   AS top_cm,
+  ch.hzdepb_r   AS bot_cm,
+  ch.sandtotal_r AS sand_pct,
+  ch.claytotal_r AS clay_pct,
+  ch.om_r        AS om_pct,
+  ch.awc_r       AS awc,
+  ch.ph1to1h2o_r AS ph
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol  = 'WI025'
+  AND c.majcompflag = 'Yes'
+ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r`
+};
+
+const ta  = document.getElementById('sql-ta');
+const sel = document.getElementById('example-select');
+const btn = document.getElementById('run-btn');
+
+sel.addEventListener('change', () => {
+  if (EXAMPLES[sel.value]) { ta.value = EXAMPLES[sel.value]; sel.value = ''; }
+});
+
+document.getElementById('copy-btn').addEventListener('click', () => {
+  navigator.clipboard.writeText(ta.value);
+});
+document.getElementById('clear-btn').addEventListener('click', () => {
+  ta.value = '';
+  document.getElementById('result-area').innerHTML = '<div id="empty-state" style="text-align:center;padding:60px 20px;color:var(--dim)"><div style="font-size:2rem;margin-bottom:10px">✏️</div><p>Write a query and click Run</p></div>';
+});
+
+ta.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') btn.click();
+});
+
+btn.addEventListener('click', async () => {
+  const sql = ta.value.trim();
+  if (!sql) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin">⟳</span> Querying SDA…';
+  const ra = document.getElementById('result-area');
+  ra.innerHTML = '<div id="result-status" class="st-wait"><span class="spin">⟳</span> Connecting to SDA API…</div>';
+
+  try {
+    const body = new URLSearchParams({ query: sql, format: 'JSON+COLUMNNAME' });
+    const resp = await fetch(SDA, { method: 'POST', body });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    const data = await resp.json();
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run Query';
+
+    if (!data.Table || data.Table.length < 2) {
+      ra.innerHTML = '<div id="result-status" class="st-ok">✓ Query executed — 0 rows returned</div>';
+      return;
+    }
+    const [headers, , ...rows] = data.Table;
+    ra.innerHTML = `
+      <div id="result-status" class="st-ok">✓ ${rows.length.toLocaleString()} row${rows.length!==1?'s':''} returned</div>
+      <div id="result-table-wrap">
+        <table id="result-table">
+          <thead><tr>${headers.map(h=>`<th>${h||''}</th>`).join('')}</tr></thead>
+          <tbody>${rows.slice(0,500).map(r=>
+            `<tr>${r.map(c=>`<td>${c!=null?String(c):'—'}</td>`).join('')}</tr>`
+          ).join('')}</tbody>
+        </table>
+      </div>
+      ${rows.length>500?`<div id="row-count">Showing 500 of ${rows.length.toLocaleString()} rows — use TOP to limit</div>`:''}
+    `;
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '▶ Run Query';
+    ra.innerHTML = `<div id="result-status" class="st-err">
+      ✗ ${e.message}<br>
+      <small style="display:block;margin-top:6px;color:var(--dim)">
+        Queries using #temp tables require <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" style="color:var(--accent)">SDA Query Interface ↗</a>
+      </small>
+    </div>`;
+  }
+});
+</script>
+</body>
+</html>

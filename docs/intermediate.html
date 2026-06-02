@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intermediate SQL Track — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link active" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">NRCS Soil Intelligence ↗</a>
+</nav>
+
+<section class="hero darker">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="lesson-tag tag-intermediate" style="display:inline">INTERMEDIATE</span> SQL Track · 5 Lessons</div>
+    <h1>Intermediate SQL<br><em>Track</em></h1>
+    <p class="lead">Connect all four tables, aggregate soil data, and write your first real-world calculation: Available Water Storage from horizon data.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="progress-bar reveal">
+    <span class="pb-label">Lessons</span>
+    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
+  </div>
+
+  <!-- Lesson 1 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">01</span>
+      <div class="lesson-title"><h3>The Full JOIN Chain</h3><p>legend → mapunit → component → chorizon — all four tables</p></div>
+      <span class="lesson-tag tag-intermediate">Intermediate</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>Now we go all the way down to horizon-level data. The key choice: <strong>INNER JOIN</strong> vs <strong>LEFT JOIN</strong> for chorizon. Use LEFT JOIN — not all components have horizon records, and an INNER JOIN would silently drop them.</p>
+      <div class="tip"><strong>INNER vs LEFT:</strong> INNER JOIN only returns rows that match on both sides. LEFT JOIN returns all rows from the left table even if there's no match on the right. For horizons, always LEFT JOIN unless you specifically need only components with horizon data.</div>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Full Profile Query — All Four Tables</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 30
+  l.areasymbol,
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ch.hzname,
+  ch.hzdept_r     AS top_cm,
+  ch.hzdepb_r     AS bot_cm,
+  ch.sandtotal_r  AS sand_pct,
+  ch.claytotal_r  AS clay_pct,
+  ch.om_r         AS organic_matter_pct,
+  ch.awc_r        AS avail_water_cap
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+LEFT  JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol = 'WI025'
+  AND c.majcompflag = 'Yes'
+ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 2 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">02</span>
+      <div class="lesson-title"><h3>Aggregation — GROUP BY, AVG, SUM</h3><p>Summarizing soil properties across map units</p></div>
+      <span class="lesson-tag tag-intermediate">Intermediate</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>Aggregation lets you summarize data — average organic matter by drainage class, total acres by HSG, min/max texture by soil order. The pattern is always: SELECT group columns + aggregate functions, FROM + JOINs, GROUP BY the same group columns.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Average Surface OM by Drainage Class — Iowa</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT
+  c.drainagecl,
+  COUNT(DISTINCT c.cokey)      AS component_count,
+  ROUND(AVG(ch.om_r), 2)       AS avg_surface_om_pct,
+  ROUND(MIN(ch.om_r), 2)       AS min_om,
+  ROUND(MAX(ch.om_r), 2)       AS max_om
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol LIKE 'IA%'
+  AND c.majcompflag = 'Yes'
+  AND ch.hzdept_r   = 0
+  AND ch.om_r IS NOT NULL
+GROUP BY c.drainagecl
+ORDER BY avg_surface_om_pct DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 3 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">03</span>
+      <div class="lesson-title"><h3>CASE WHEN — Classification Logic</h3><p>Categorizing soils by property — the SSURGO way</p></div>
+      <span class="lesson-tag tag-intermediate">Intermediate</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p><code>CASE WHEN</code> is SQL's if/then — essential for translating coded values into readable labels, classifying soils into risk tiers, or building custom rating scales.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">HSG Classification with Description</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 30
+  c.compname,
+  c.hydgrp,
+  c.drainagecl,
+  CASE c.hydgrp
+    WHEN 'A' THEN 'Low runoff — well drained, sandy'
+    WHEN 'B' THEN 'Moderate runoff — moderately well drained'
+    WHEN 'C' THEN 'High runoff — slow infiltration'
+    WHEN 'D' THEN 'Very high runoff — saturated, very slow'
+    ELSE 'Dual-class or unclassified'
+  END AS hsg_description
+FROM legend l
+INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+INNER JOIN component c ON c.mukey  = mu.mukey
+WHERE l.areasymbol LIKE 'WI%'
+  AND c.majcompflag = 'Yes'
+  AND c.hydgrp IS NOT NULL
+ORDER BY c.hydgrp, c.compname</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 4 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">04</span>
+      <div class="lesson-title"><h3>CTEs — WITH Clause</h3><p>Breaking complex queries into readable, named steps</p></div>
+      <span class="lesson-tag tag-intermediate">Intermediate</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>A CTE (Common Table Expression) names an intermediate result set. This turns a complex nested query into a series of readable steps — and in SSURGO, where queries often span 4+ tables with multiple conditions, CTEs are essential for maintainability.</p>
+      <div class="note"><strong>CTE syntax:</strong> <code>WITH name AS (SELECT …) SELECT … FROM name</code>. You can chain multiple CTEs: <code>WITH a AS (…), b AS (SELECT … FROM a) SELECT … FROM b</code>.</div>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">CTE — Dominant Component per Map Unit, Then Aggregate</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">-- Step 1: find dominant component per map unit
+-- Step 2: aggregate by drainage class
+WITH dominant AS (
+  SELECT
+    mu.mukey,
+    mu.muname,
+    mu.muacres,
+    c.compname,
+    c.drainagecl,
+    c.hydgrp,
+    c.comppct_r,
+    ROW_NUMBER() OVER (
+      PARTITION BY mu.mukey
+      ORDER BY c.comppct_r DESC
+    ) AS rn
+  FROM legend l
+  INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+  INNER JOIN component c ON c.mukey  = mu.mukey
+  WHERE l.areasymbol LIKE 'MN%'
+    AND c.majcompflag = 'Yes'
+)
+SELECT
+  drainagecl,
+  COUNT(*)                   AS map_unit_count,
+  ROUND(SUM(muacres), 0)     AS total_acres,
+  ROUND(AVG(muacres), 1)     AS avg_mu_acres
+FROM dominant
+WHERE rn = 1
+GROUP BY drainagecl
+ORDER BY total_acres DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 5 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">05</span>
+      <div class="lesson-title"><h3>Available Water Storage</h3><p>A real-world multi-step soil calculation</p></div>
+      <span class="lesson-tag tag-intermediate">Intermediate</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <div class="note"><strong>What is AWS?</strong> Available Water Storage measures how much plant-available water a soil holds — the hydraulic buffer between drought and a successful harvest. It's calculated as the sum of AWC × horizon thickness across depth zones.</div>
+      <p>Formula: <code>AWS = Σ (min(hzdepb_r, 150) − max(hzdept_r, 0)) × awc_r</code> for each horizon within 0–150 cm.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Available Water Storage 0–150cm — WI025</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 20
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ROUND(SUM(
+    CASE
+      WHEN ch.hzdepb_r <= 150
+        THEN (ch.hzdepb_r - ch.hzdept_r) * ISNULL(ch.awc_r, 0)
+      WHEN ch.hzdept_r < 150
+        THEN (150 - ch.hzdept_r) * ISNULL(ch.awc_r, 0)
+      ELSE 0
+    END
+  ), 2) AS aws_0_150cm_inches
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol  = 'WI025'
+  AND c.majcompflag = 'Yes'
+GROUP BY mu.musym, mu.muname, c.compname, c.comppct_r
+ORDER BY aws_0_150cm_inches DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+      <div class="tip" style="margin-top:16px"><strong>Real science:</strong> A fine loam in the Corn Belt typically holds 8–10 inches of plant-available water to 150 cm depth. Sandy soils may hold only 2–3 inches. This difference determined which fields survived the 2012 drought.</div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top:48px;padding:32px;background:var(--panel);border-radius:var(--radius);border:1px solid var(--border)">
+    <div class="eyebrow">Up Next</div>
+    <h2 class="section-h2" style="font-size:1.8rem">Ready for <em>Expert?</em></h2>
+    <p>Soil organic carbon formula, NCCPI productivity index, interpretations, and spatial AOI queries.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+      <a href="expert.html" style="padding:10px 22px;background:var(--red);color:#fff;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">Expert Track →</a>
+      <a href="query-runner.html" style="padding:10px 22px;border:1px solid var(--border2);color:var(--text);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">Open Query Lab</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training · <a href="index.html">Home</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a> · <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank">SQL Library ↗</a></p>
+</footer>
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>

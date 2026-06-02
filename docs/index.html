@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Soil Data Access Training — SQL, APIs &amp; SSURGO</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link active" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">NRCS Soil Intelligence ↗</a>
+</nav>
+
+<section class="hero darker" style="background:#04060c">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">USDA NRCS · SSURGO · SDA REST API · SQL Training</div>
+    <h1>Learn to Query<br><em>America's Soil Database</em></h1>
+    <p class="lead">From your first <code>SELECT</code> to production-grade soil carbon calculations — a complete guide to SSURGO and the Soil Data Access REST API. Live examples run against real data.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+      <a href="beginner.html" style="padding:12px 24px;background:var(--soil);color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;transition:all .15s">Start Beginner Track →</a>
+      <a href="query-runner.html" style="padding:12px 24px;border:1px solid var(--border2);color:var(--text);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background='transparent'">Try the Query Lab</a>
+      <a href="soil-model.html" style="padding:12px 24px;border:1px solid var(--border2);color:var(--text);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background='transparent'">Explore Data Model</a>
+    </div>
+  </div>
+</section>
+
+<!-- What You'll Learn -->
+<section class="section dark">
+  <div class="section-inner">
+    <div class="eyebrow">Curriculum Overview</div>
+    <h2 class="section-h2">What You'll <em>Learn</em></h2>
+    <p class="lead">Three SQL tracks, two API tracks, one live query sandbox — everything built around real SSURGO data.</p>
+    <div class="card-grid">
+      <a href="beginner.html" class="card" style="text-decoration:none;border-left:3px solid var(--green)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Beginner SQL</div>
+        <h3>Zero to Soil Queries</h3>
+        <p>SELECT, FROM, WHERE, ORDER BY — all against real SSURGO data. No SQL experience required. Five lessons, each with a live example.</p>
+        <span style="font-size:11px;color:var(--green)">5 lessons →</span>
+      </a>
+      <a href="intermediate.html" class="card" style="text-decoration:none;border-left:3px solid var(--gold)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:8px">Intermediate SQL</div>
+        <h3>Connect the Tables</h3>
+        <p>JOINs, GROUP BY, CTEs, CASE WHEN — and your first real calculation: Available Water Storage from horizon data.</p>
+        <span style="font-size:11px;color:var(--gold)">5 lessons →</span>
+      </a>
+      <a href="expert.html" class="card" style="text-decoration:none;border-left:3px solid var(--red)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:8px">Expert SQL</div>
+        <h3>Production-Grade Queries</h3>
+        <p>Soil organic carbon formula, NCCPI productivity index, fragility interpretations, temp tables, and spatial AOI queries.</p>
+        <span style="font-size:11px;color:var(--red)">5 lessons →</span>
+      </a>
+      <a href="api-python.html" class="card" style="text-decoration:none;border-left:3px solid #60a5fa">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#60a5fa;margin-bottom:8px">Python API</div>
+        <h3>requests → pandas → charts</h3>
+        <p>Call SDA with <code>requests</code>, parse JSON into DataFrames, batch large queries, and build full analysis pipelines.</p>
+        <span style="font-size:11px;color:#60a5fa">5 lessons →</span>
+      </a>
+      <a href="api-javascript.html" class="card" style="text-decoration:none;border-left:3px solid #fbbf24">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#fbbf24;margin-bottom:8px">JavaScript API</div>
+        <h3>fetch() → DOM → MapLibre</h3>
+        <p>Query SDA from the browser, render live tables, connect soil data to interactive MapLibre GL maps, and ship reusable modules.</p>
+        <span style="font-size:11px;color:#fbbf24">5 lessons →</span>
+      </a>
+      <a href="soil-model.html" class="card" style="text-decoration:none;border-left:3px solid var(--accent)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Data Model</div>
+        <h3>134 Tables · The Schema</h3>
+        <p>The full SSURGO join chain, table reference, live column lookup, and common query mistakes — your permanent reference.</p>
+        <span style="font-size:11px;color:var(--accent)">Reference →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- SSURGO Join Chain -->
+<section class="section darker">
+  <div class="section-inner">
+    <div class="eyebrow">The Foundation</div>
+    <h2 class="section-h2">The SSURGO <em>Join Chain</em></h2>
+    <p class="lead">Every SSURGO query follows this four-table spine. Learn it once, use it in every query you write.</p>
+    <div style="overflow-x:auto;padding-bottom:8px">
+      <div style="display:flex;align-items:center;gap:0;min-width:700px;margin-bottom:32px">
+        <!-- legend -->
+        <div style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);border-radius:8px;padding:20px 24px;min-width:160px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#38bdf8;margin-bottom:8px">Survey Area</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;color:#38bdf8;font-weight:700;margin-bottom:10px">legend</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.9;font-family:var(--mono)">
+            <span style="color:#38bdf8">lkey</span> PK<br>
+            areasymbol<br>areaname<br>saverest
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 12px">
+          <div style="font-size:10px;color:var(--dimmer);margin-bottom:3px">lkey</div>
+          <div style="width:40px;height:2px;background:var(--border2)"></div>
+          <div style="font-size:14px;color:var(--dim);margin-top:3px">→</div>
+        </div>
+        <!-- mapunit -->
+        <div style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:20px 24px;min-width:160px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#22c55e;margin-bottom:8px">Map Unit</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;color:#22c55e;font-weight:700;margin-bottom:10px">mapunit</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.9;font-family:var(--mono)">
+            <span style="color:#22c55e">mukey</span> PK<br>
+            lkey FK<br>musym<br>muname<br>muacres
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 12px">
+          <div style="font-size:10px;color:var(--dimmer);margin-bottom:3px">mukey</div>
+          <div style="width:40px;height:2px;background:var(--border2)"></div>
+          <div style="font-size:14px;color:var(--dim);margin-top:3px">→</div>
+        </div>
+        <!-- component -->
+        <div style="background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.3);border-radius:8px;padding:20px 24px;min-width:160px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8a84b;margin-bottom:8px">Component</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;color:#c8a84b;font-weight:700;margin-bottom:10px">component</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.9;font-family:var(--mono)">
+            <span style="color:#c8a84b">cokey</span> PK<br>
+            mukey FK<br>compname<br>comppct_r<br>majcompflag
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:0 12px">
+          <div style="font-size:10px;color:var(--dimmer);margin-bottom:3px">cokey</div>
+          <div style="width:40px;height:2px;background:var(--border2)"></div>
+          <div style="font-size:14px;color:var(--dim);margin-top:3px">→</div>
+        </div>
+        <!-- chorizon -->
+        <div style="background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:20px 24px;min-width:160px">
+          <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#f97316;margin-bottom:8px">Horizon</div>
+          <div style="font-family:var(--mono);font-size:1.1rem;color:#f97316;font-weight:700;margin-bottom:10px">chorizon</div>
+          <div style="font-size:11px;color:var(--dim);line-height:1.9;font-family:var(--mono)">
+            <span style="color:#f97316">chkey</span> PK<br>
+            cokey FK<br>hzname<br>om_r<br>awc_r
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Try It panel -->
+    <div class="sql-panel reveal">
+      <div class="sql-toolbar">
+        <span class="sql-toolbar-label">Try It — Full Join Chain (Live SDA Query)</span>
+        <button class="btn-copy" onclick="navigator.clipboard.writeText(this.closest('.sql-panel').querySelector('textarea').value);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
+        <button class="btn-run">▶ Run on SDA</button>
+      </div>
+      <textarea class="sql-editor" style="height:160px">SELECT TOP 15
+  l.areasymbol,
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ch.hzname,
+  ch.hzdept_r   AS top_cm,
+  ch.hzdepb_r   AS bot_cm,
+  ch.om_r        AS organic_matter_pct,
+  ch.awc_r       AS avail_water_cap
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+LEFT  JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol = 'WI025'
+  AND c.majcompflag = 'Yes'
+ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
+      <div class="sql-result"></div>
+    </div>
+  </div>
+</section>
+
+<!-- Learning Path -->
+<section class="section dark">
+  <div class="section-inner">
+    <div class="eyebrow">Your Path</div>
+    <h2 class="section-h2">Five Steps from <em>Zero to Expert</em></h2>
+    <div class="step-list" style="max-width:680px">
+      <div class="step">
+        <div class="step-line"></div>
+        <div class="step-num" style="border-color:rgba(34,197,94,.5);color:var(--green)">1</div>
+        <div class="step-content">
+          <h4><a href="beginner.html" style="color:#fff;text-decoration:none">Beginner SQL</a></h4>
+          <p>SELECT · FROM · WHERE · ORDER BY · dominant component. Get data out of SSURGO in 30 minutes.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-line"></div>
+        <div class="step-num" style="border-color:rgba(245,158,11,.5);color:var(--gold)">2</div>
+        <div class="step-content">
+          <h4><a href="intermediate.html" style="color:#fff;text-decoration:none">Intermediate SQL</a></h4>
+          <p>JOINs · GROUP BY · CTEs · CASE WHEN · Available Water Storage calculation.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-line"></div>
+        <div class="step-num" style="border-color:rgba(239,68,68,.5);color:var(--red)">3</div>
+        <div class="step-content">
+          <h4><a href="expert.html" style="color:#fff;text-decoration:none">Expert SQL</a></h4>
+          <p>Soil organic carbon formula · NCCPI · interpretations · temp tables · spatial AOI queries.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-line"></div>
+        <div class="step-num" style="border-color:rgba(96,165,250,.5);color:#60a5fa">4</div>
+        <div class="step-content">
+          <h4><a href="api-python.html" style="color:#fff;text-decoration:none">Python API</a></h4>
+          <p>requests · pandas DataFrames · batched queries · soilDB-style wrappers · matplotlib charts.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num" style="border-color:rgba(251,191,36,.5);color:#fbbf24">5</div>
+        <div class="step-content">
+          <h4><a href="api-javascript.html" style="color:#fff;text-decoration:none">JavaScript API</a></h4>
+          <p>fetch() · live HTML tables · MapLibre GL integration · reusable SDA client module.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Companion Repo -->
+<section class="section darker">
+  <div class="section-inner">
+    <div class="eyebrow">Companion Resource</div>
+    <h2 class="section-h2">NRCS Soil Intelligence <em>Platform</em></h2>
+    <p class="lead">A separate maintained repository with 254 production SQL scripts, interactive maps, and NYT-style data journalism — all built on SSURGO. Links below are live and maintained independently.</p>
+    <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+      <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/sql-explorer.html" target="_blank" rel="noopener" class="card companion-box" style="text-decoration:none">
+        <span class="companion-icon">🔍</span>
+        <div class="companion-body">
+          <div class="label">SQL Library</div>
+          <strong>254 Production Scripts</strong>
+          <span>Browse by category — soil health, carbon, water, taxonomy, QA</span>
+        </div>
+        <span class="companion-arrow">↗</span>
+      </a>
+      <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/soil-atlas.html" target="_blank" rel="noopener" class="card companion-box" style="text-decoration:none">
+        <span class="companion-icon">🗺</span>
+        <div class="companion-body">
+          <div class="label">Interactive Map</div>
+          <strong>Soil Intelligence Atlas</strong>
+          <span>7 story modes, live SDA profiles, texture triangle</span>
+        </div>
+        <span class="companion-arrow">↗</span>
+      </a>
+      <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/soil-data-stories.html" target="_blank" rel="noopener" class="card companion-box" style="text-decoration:none">
+        <span class="companion-icon">📖</span>
+        <div class="companion-body">
+          <div class="label">Data Journalism</div>
+          <strong>The World Beneath</strong>
+          <span>NYT-style 7-chapter story from real SSURGO data</span>
+        </div>
+        <span class="companion-arrow">↗</span>
+      </a>
+      <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/data-models.html" target="_blank" rel="noopener" class="card companion-box" style="text-decoration:none">
+        <span class="companion-icon">🔗</span>
+        <div class="companion-body">
+          <div class="label">Schema Reference</div>
+          <strong>Interactive Data Model</strong>
+          <span>D3 ER diagram, 134-table browser, domain decoder</span>
+        </div>
+        <span class="companion-arrow">↗</span>
+      </a>
+    </div>
+    <div class="note" style="margin-top:20px"><strong>Note:</strong> These links point to the live NRCS Soil Intelligence GitHub Pages site — maintained as a separate repository. If a link doesn't resolve, the companion site URL may have changed; check <a href="https://github.com/jneme910/NRCS-Soil-Data-Access" target="_blank">github.com/jneme910/NRCS-Soil-Data-Access</a>.</div>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training Resources · USDA NRCS SSURGO · Built with real soil data</p>
+  <p style="margin-top:8px">
+    <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a> ·
+    <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> ·
+    <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank">NRCS Soil Intelligence</a> ·
+    <a href="https://github.com/jneme910/Soil-Data-Access-Training-Resources" target="_blank">GitHub</a>
+  </p>
+</footer>
+
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>

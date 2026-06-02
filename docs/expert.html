@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Expert SQL Track — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link active" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">NRCS Soil Intelligence ↗</a>
+</nav>
+
+<section class="hero darker">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="lesson-tag tag-expert" style="display:inline">EXPERT</span> SQL Track · 5 Lessons</div>
+    <h1>Expert SQL<br><em>Track</em></h1>
+    <p class="lead">Production-grade SSURGO queries: soil organic carbon, NCCPI, interpretations, dominant condition method, and spatial AOI. Five advanced lessons.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="progress-bar reveal">
+    <span class="pb-label">Lessons</span>
+    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
+  </div>
+
+  <!-- Lesson 1 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">01</span>
+      <div class="lesson-title"><h3>Temp Tables — Multi-Step Queries</h3><p>The pattern used in 90% of production SSURGO scripts</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <div class="warn"><strong>Note:</strong> <code>#temp tables</code>, <code>CREATE TABLE</code>, and <code>INSERT INTO</code> do NOT work in the SDA REST API (<code>/Tabular/post.rest</code>). They run in SQL Server Management Studio (SSMS). The query below uses CTEs as a fully SDA-compatible equivalent.</div>
+      <p>Temp tables break complex SSURGO queries into stages: first gather the map units (#map), then the components (#comp), then the horizons (#horizon) — each step building on the last. CTEs achieve the same result and work in SDA.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Multi-Step Query as CTEs (SDA-Compatible) — ND001</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">-- CTE equivalent of a 3-step temp table query
+WITH survey AS (
+  SELECT lkey, areasymbol, areaname
+  FROM legend
+  WHERE areasymbol = 'ND001'
+),
+map_units AS (
+  SELECT mu.mukey, mu.musym, mu.muname, mu.muacres, s.areasymbol
+  FROM survey s
+  INNER JOIN mapunit mu ON mu.lkey = s.lkey
+),
+components AS (
+  SELECT
+    m.musym, m.muname, m.muacres,
+    c.cokey, c.compname, c.comppct_r,
+    c.taxclname, c.drainagecl, c.hydgrp, c.slope_r
+  FROM map_units m
+  INNER JOIN component c ON c.mukey = m.mukey
+  WHERE c.majcompflag = 'Yes'
+)
+SELECT TOP 20 * FROM components
+ORDER BY muacres DESC, comppct_r DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 2 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">02</span>
+      <div class="lesson-title"><h3>Soil Organic Carbon — The Full Formula</h3><p>The equation behind SSURGO's carbon accounting</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <div class="tip"><strong>SOC Formula:</strong> <code>SOC (g/m²) = ((Hz_cm × (OM/1.724 × Db)) / 100) × ((100 − frag%) / 100) × compPct × 100</code></div>
+      <ul style="color:var(--dim);font-size:.88rem;line-height:2.2;padding-left:20px;margin:12px 0">
+        <li><code>OM / 1.724</code> — converts organic matter % to organic carbon % (Van Bemmelen factor)</li>
+        <li><code>× Db</code> — bulk density (g/cc) converts concentration to mass per volume</li>
+        <li><code>× Hz_cm</code> — horizon thickness converts to depth-weighted stock</li>
+        <li><code>× (1 − frag/100)</code> — rock fragment correction (soil only, not rocks)</li>
+        <li><code>× comppct_r × 100</code> — component weighting for map unit proportional stock</li>
+      </ul>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Soil Organic Carbon by Horizon (0–100cm) — WI025</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 30
+  mu.musym,
+  c.compname,
+  c.comppct_r,
+  ch.hzname,
+  ch.hzdept_r                AS top_cm,
+  ch.hzdepb_r                AS bot_cm,
+  ch.om_r                    AS om_pct,
+  ch.dbthirdbar_r            AS bulk_density,
+  ROUND(
+    ((CASE WHEN ch.hzdepb_r <= 100 THEN ch.hzdepb_r
+           WHEN ch.hzdept_r < 100  THEN 100
+           ELSE 0 END
+       - CASE WHEN ch.hzdept_r < 100 THEN ch.hzdept_r ELSE 0 END)
+     * ((ISNULL(ch.om_r, 0) / 1.724) * ISNULL(ch.dbthirdbar_r, 1.3))
+     / 100.0)
+    * ((100.0 - ISNULL(ch.fragvol_r, 0)) / 100.0)
+    * (c.comppct_r * 100), 1) AS hz_soc_gm2
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol  = 'WI025'
+  AND c.majcompflag = 'Yes'
+  AND ch.hzdept_r   < 100
+  AND ch.om_r       IS NOT NULL
+  AND ch.dbthirdbar_r IS NOT NULL
+ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 3 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">03</span>
+      <div class="lesson-title"><h3>Interpretations — NCCPI &amp; Fragile Soils</h3><p>The cointerp table: how SSURGO rates soil suitability</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>The <code>cointerp</code> table stores interpretation ratings for each component. Key fields: <code>mrulename</code> (the rule, e.g., "Fragile Soil Index"), <code>ruledepth</code> (0=top-level, 1=sub-rule), <code>interphrc</code> (rating class), <code>interphr</code> (numeric 0–1).</p>
+      <div class="tip"><strong>ruledepth:</strong> Use <code>ruledepth = 0</code> for the overall top-level rating. Use <code>ruledepth = 1</code> for crop-specific sub-rules (e.g., NCCPI for corn vs. soybeans separately).</div>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">NCCPI + Fragile Soil Index — ND001</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 30
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  ci.mrulename,
+  ci.interphrc         AS rating_class,
+  ROUND(ci.interphr, 3) AS numeric_rating
+FROM legend l
+INNER JOIN mapunit  mu ON mu.lkey  = l.lkey
+INNER JOIN component c ON c.mukey  = mu.mukey
+INNER JOIN cointerp ci ON ci.cokey = c.cokey
+WHERE l.areasymbol  = 'ND001'
+  AND c.majcompflag = 'Yes'
+  AND ci.ruledepth  = 0
+  AND ci.mrulename IN (
+    'NCCPI - National Commodity Crop Productivity Index (Ver 3.0)',
+    'Fragile Soil Index'
+  )
+ORDER BY mu.musym, ci.mrulename, c.comppct_r DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 4 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">04</span>
+      <div class="lesson-title"><h3>Dominant Condition Method</h3><p>Aggregating interpretations to the map unit level</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>The dominant condition method assigns a single rating class to a map unit based on which class covers the most component percent. This is the standard SSURGO aggregation used in the Regen Ag Risk Map and fragile soil mapping.</p>
+      <p>Pattern: GROUP BY mukey + interphrc, SUM comppct_r, pick the highest sum with ROW_NUMBER().</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Fragile Soil Index — Dominant Condition by Map Unit (IA025)</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">SELECT TOP 30
+  mu.mukey,
+  mu.musym,
+  mu.muname,
+  dom.interphrc       AS fsi_dominant_class,
+  ROUND(dom.sum_pct, 1) AS dominant_pct
+FROM mapunit mu
+INNER JOIN (
+  SELECT
+    c.mukey,
+    ci.interphrc,
+    SUM(c.comppct_r)   AS sum_pct,
+    ROW_NUMBER() OVER (
+      PARTITION BY c.mukey
+      ORDER BY SUM(c.comppct_r) DESC
+    ) AS rn
+  FROM component c
+  INNER JOIN cointerp ci ON ci.cokey = c.cokey
+  WHERE ci.mrulename = 'Fragile Soil Index'
+    AND ci.ruledepth  = 0
+    AND ci.interphrc IS NOT NULL
+  GROUP BY c.mukey, ci.interphrc
+) dom ON dom.mukey = mu.mukey AND dom.rn = 1
+INNER JOIN legend l ON l.lkey = mu.lkey
+WHERE l.areasymbol = 'IA025'
+ORDER BY dom.sum_pct DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lesson 5 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">05</span>
+      <div class="lesson-title"><h3>Spatial Queries — Area of Interest</h3><p>Constraining queries to a geographic polygon</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>The SDA spatial endpoint accepts a WKT geometry to return only map units that intersect an area of interest. This enables field-level, county-level, and custom boundary queries without pre-filtering by areasymbol.</p>
+      <div class="warn"><strong>Spatial endpoint:</strong> Full AOI geometry queries use the SDA <em>Spatial</em> endpoint and Tabular/post services together. The tabular example below shows the standard approach using areasymbol as a proxy for geographic filtering.</div>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">Multi-County Tabular Query (Spatial Approach via areasymbol)</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">-- Spatial-style: all dominant components across multiple Colorado counties
+SELECT TOP 30
+  mu.mukey,
+  l.areasymbol,
+  mu.musym,
+  mu.muname,
+  mu.muacres,
+  c.compname,
+  c.comppct_r,
+  c.taxorder,
+  c.hydgrp
+FROM legend l
+INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+INNER JOIN component c ON c.mukey  = mu.mukey
+WHERE l.areasymbol IN ('CO601','CO602','CO603')
+  AND c.majcompflag = 'Yes'
+  AND mu.muacres > 100
+ORDER BY mu.muacres DESC, c.comppct_r DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
+      <div class="note" style="margin-top:12px">For full spatial AOI workflows, see the <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedSpatialDataAccess.pdf" target="_blank">Advanced Spatial Data Access PDF</a> — the definitive guide to WKT geometry queries.</div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top:48px;padding:32px;background:var(--panel);border-radius:var(--radius);border:1px solid var(--border)">
+    <div class="eyebrow">Up Next</div>
+    <h2 class="section-h2" style="font-size:1.8rem">Take It to <em>Code</em></h2>
+    <p>Now automate everything — call SDA from Python or JavaScript, build analysis pipelines, and connect soil data to interactive maps.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+      <a href="api-python.html" style="padding:10px 22px;background:#60a5fa;color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">Python API →</a>
+      <a href="api-javascript.html" style="padding:10px 22px;background:#fbbf24;color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">JavaScript API →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training · <a href="index.html">Home</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a></p>
+</footer>
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>

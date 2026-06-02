@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JavaScript API Track — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link active" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">NRCS Soil Intelligence ↗</a>
+</nav>
+
+<section class="hero darker">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="lesson-tag tag-javascript" style="display:inline">JAVASCRIPT</span> API Track · 5 Lessons</div>
+    <h1>JavaScript API<br><em>Track</em></h1>
+    <p class="lead">Query SSURGO directly from the browser. No server required. Build live tables, connect SDA data to MapLibre GL maps, and ship reusable soil data modules.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="progress-bar reveal">
+    <span class="pb-label">Lessons</span>
+    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
+  </div>
+
+  <!-- Lesson 1 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">01</span>
+      <div class="lesson-title"><h3>fetch() to SDA</h3><p>The browser-native way to call REST APIs</p></div>
+      <span class="lesson-tag tag-javascript">JavaScript</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p><code>fetch()</code> is built into every modern browser — no libraries needed. SDA accepts cross-origin requests, so this works directly from any webpage.</p>
+      <pre><span class="kw">const</span> SDA = <span class="st">'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest'</span>;
+
+<span class="kw">async function</span> <span class="fn">querySDA</span>(sql) {
+  <span class="kw">const</span> body = <span class="kw">new</span> URLSearchParams({ query: sql, format: <span class="st">'JSON+COLUMNNAME'</span> });
+  <span class="kw">const</span> resp = <span class="kw">await</span> fetch(SDA, { method: <span class="st">'POST'</span>, body });
+  <span class="kw">if</span> (!resp.ok) <span class="kw">throw new</span> Error(`HTTP ${resp.status}`);
+  <span class="kw">const</span> data = <span class="kw">await</span> resp.json();
+  <span class="kw">if</span> (!data.Table || data.Table.length &lt; <span class="nu">2</span>) <span class="kw">return</span> { headers: [], rows: [] };
+  <span class="kw">const</span> [headers, , ...rows] = data.Table;
+  <span class="co">// Convert rows to objects with column names as keys</span>
+  <span class="kw">return</span> rows.map(row =&gt; Object.fromEntries(headers.map((h, i) =&gt; [h, row[i]])));
+}
+
+<span class="co">// Usage</span>
+<span class="kw">const</span> results = <span class="kw">await</span> querySDA(
+  <span class="st">"SELECT TOP 5 musym, muname, muacres FROM mapunit ORDER BY muacres DESC"</span>
+);
+console.table(results);</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 2 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">02</span>
+      <div class="lesson-title"><h3>Render Results in HTML</h3><p>Turn SDA JSON into a live dark table</p></div>
+      <span class="lesson-tag tag-javascript">JavaScript</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <pre><span class="kw">async function</span> <span class="fn">renderTable</span>(sql, containerId) {
+  <span class="kw">const</span> el = document.getElementById(containerId);
+  el.innerHTML = <span class="st">'&lt;p style="color:#38bdf8"&gt;⟳ Loading…&lt;/p&gt;'</span>;
+  <span class="kw">try</span> {
+    <span class="kw">const</span> body = <span class="kw">new</span> URLSearchParams({ query: sql, format: <span class="st">'JSON+COLUMNNAME'</span> });
+    <span class="kw">const</span> { Table } = <span class="kw">await</span> fetch(SDA, { method: <span class="st">'POST'</span>, body }).then(r =&gt; r.json());
+    <span class="kw">const</span> [headers, , ...rows] = Table;
+
+    el.innerHTML = `
+      &lt;p style="color:#22c55e"&gt;✓ ${rows.length} rows&lt;/p&gt;
+      &lt;div style="overflow-x:auto"&gt;
+        &lt;table class="result-table"&gt;
+          &lt;thead&gt;&lt;tr&gt;
+            ${headers.map(h =&gt; `&lt;th&gt;${h}&lt;/th&gt;`).join(<span class="st">''</span>)}
+          &lt;/tr&gt;&lt;/thead&gt;
+          &lt;tbody&gt;
+            ${rows.slice(<span class="nu">0</span>, <span class="nu">50</span>).map(r =&gt;
+              `&lt;tr&gt;${r.map(c =&gt; `&lt;td&gt;${c ?? <span class="st">'—'</span>}&lt;/td&gt;`).join(<span class="st">''</span>)}&lt;/tr&gt;`
+            ).join(<span class="st">''</span>)}
+          &lt;/tbody&gt;
+        &lt;/table&gt;
+      &lt;/div&gt;`;
+  } <span class="kw">catch</span>(e) {
+    el.innerHTML = `&lt;p style="color:red"&gt;✗ ${e.message}&lt;/p&gt;`;
+  }
+}
+
+<span class="co">// Call it:</span>
+renderTable(
+  <span class="st">"SELECT TOP 20 areasymbol, areaname FROM legend WHERE areasymbol LIKE 'WI%'"</span>,
+  <span class="st">'my-container'</span>
+);</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 3 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">03</span>
+      <div class="lesson-title"><h3>MapLibre GL + SDA Data</h3><p>Color a soil map from live interpretation data</p></div>
+      <span class="lesson-tag tag-javascript">JavaScript</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <div class="note"><strong>MapLibre GL JS</strong> is the open-source map library used by the NRCS Soil Intelligence platform. Include it with: <code>&lt;script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"&gt;&lt;/script&gt;</code></div>
+      <pre><span class="co">// Query FSI ratings, then color a county fill layer</span>
+<span class="kw">async function</span> <span class="fn">loadFSILayer</span>(map, areasymbol) {
+  <span class="kw">const</span> body = <span class="kw">new</span> URLSearchParams({
+    query: `
+      SELECT mu.musym, ci.interphrc AS fsi_class, ci.interphr AS fsi_score
+      FROM legend l
+      INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+      INNER JOIN component c ON c.mukey  = mu.mukey
+      INNER JOIN cointerp  ci ON ci.cokey = c.cokey
+      WHERE l.areasymbol = '${areasymbol}'
+        AND c.majcompflag = 'Yes'
+        AND ci.mrulename  = 'Fragile Soil Index'
+        AND ci.ruledepth  = 0
+      ORDER BY c.comppct_r DESC
+    `,
+    format: <span class="st">'JSON+COLUMNNAME'</span>
+  });
+  <span class="kw">const</span> [headers, , ...rows] = (<span class="kw">await</span> fetch(SDA, {method:<span class="st">'POST'</span>,body}).then(r=&gt;r.json())).Table;
+
+  <span class="co">// Build lookup: musym → { fsi_class, fsi_score }</span>
+  <span class="kw">const</span> lookup = {};
+  rows.forEach(row =&gt; {
+    <span class="kw">const</span> obj = Object.fromEntries(headers.map((h,i) =&gt; [h, row[i]]));
+    <span class="kw">if</span> (!lookup[obj.musym]) lookup[obj.musym] = obj;
+  });
+
+  console.log(`Loaded ${Object.keys(lookup).length} FSI ratings for ${areasymbol}`);
+  <span class="kw">return</span> lookup;
+}
+
+<span class="kw">function</span> <span class="fn">fsiToColor</span>(cls) {
+  <span class="kw">const</span> colors = {
+    <span class="st">'Not fragile'</span>:        <span class="st">'#1b7837'</span>,
+    <span class="st">'Slightly fragile'</span>:   <span class="st">'#78c679'</span>,
+    <span class="st">'Moderately fragile'</span>: <span class="st">'#fecc5c'</span>,
+    <span class="st">'Fragile'</span>:            <span class="st">'#fd8d3c'</span>,
+    <span class="st">'Highly fragile'</span>:     <span class="st">'#f03b20'</span>,
+    <span class="st">'Extremely fragile'</span>:  <span class="st">'#7b0007'</span>,
+  };
+  <span class="kw">return</span> colors[cls] || <span class="st">'#343450'</span>;
+}</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 4 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">04</span>
+      <div class="lesson-title"><h3>Reusable SDA Module</h3><p>A drop-in client for any web project</p></div>
+      <span class="lesson-tag tag-javascript">JavaScript</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <pre><span class="st">/**
+ * SDAClient — minimal, reusable SDA REST client
+ * Drop into any web project. Zero dependencies.
+ */</span>
+<span class="kw">const</span> SDAClient = (() =&gt; {
+  <span class="kw">const</span> ENDPOINT = <span class="st">'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest'</span>;
+  <span class="kw">const</span> cache = <span class="kw">new</span> Map();
+
+  <span class="kw">async function</span> <span class="fn">query</span>(sql, { useCache = <span class="kw">true</span> } = {}) {
+    <span class="kw">const</span> key = sql.trim().toLowerCase();
+    <span class="kw">if</span> (useCache &amp;&amp; cache.has(key)) <span class="kw">return</span> cache.get(key);
+    <span class="kw">const</span> body = <span class="kw">new</span> URLSearchParams({ query: sql, format: <span class="st">'JSON+COLUMNNAME'</span> });
+    <span class="kw">const</span> resp = <span class="kw">await</span> fetch(ENDPOINT, { method: <span class="st">'POST'</span>, body });
+    <span class="kw">if</span> (!resp.ok) <span class="kw">throw new</span> Error(`SDA HTTP ${resp.status}`);
+    <span class="kw">const</span> data = <span class="kw">await</span> resp.json();
+    <span class="kw">if</span> (!data.Table || data.Table.length &lt; <span class="nu">2</span>) <span class="kw">return</span> [];
+    <span class="kw">const</span> [headers, , ...rows] = data.Table;
+    <span class="kw">const</span> result = rows.map(r =&gt; Object.fromEntries(headers.map((h,i) =&gt; [h, r[i]])));
+    <span class="kw">if</span> (useCache) cache.set(key, result);
+    <span class="kw">return</span> result;
+  }
+
+  <span class="kw">async function</span> <span class="fn">dominantComponents</span>(areasymbol) {
+    <span class="kw">return</span> query(`
+      SELECT mu.musym, mu.muname, mu.muacres,
+             c.compname, c.comppct_r, c.drainagecl, c.hydgrp, c.taxclname
+      FROM legend l
+      INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+      INNER JOIN component c ON c.mukey  = mu.mukey
+      WHERE l.areasymbol = '${areasymbol}' AND c.majcompflag = 'Yes'
+      ORDER BY mu.muacres DESC, c.comppct_r DESC
+    `);
+  }
+
+  <span class="kw">async function</span> <span class="fn">horizons</span>(areasymbol) {
+    <span class="kw">return</span> query(`
+      SELECT mu.musym, c.compname, ch.hzname,
+             ch.hzdept_r, ch.hzdepb_r, ch.om_r, ch.awc_r, ch.ph1to1h2o_r
+      FROM legend l
+      INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+      INNER JOIN component c ON c.mukey  = mu.mukey
+      INNER JOIN chorizon ch ON ch.cokey = c.cokey
+      WHERE l.areasymbol = '${areasymbol}' AND c.majcompflag = 'Yes'
+      ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r
+    `);
+  }
+
+  <span class="kw">return</span> { query, dominantComponents, horizons };
+})();
+
+<span class="co">// Usage</span>
+<span class="kw">const</span> comps = <span class="kw">await</span> SDAClient.dominantComponents(<span class="st">'MN003'</span>);
+console.log(`${comps.length} dominant components`);</pre>
+      <div class="note" style="margin-top:12px">This exact pattern (with the <code>COMPANION_BASE</code> constant) is what powers the <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/soil-atlas.html" target="_blank">NRCS Soil Atlas</a> — all live soil profile queries use a version of this module.</div>
+    </div>
+  </div>
+
+  <!-- Lesson 5 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">05</span>
+      <div class="lesson-title"><h3>Interactive Soil Profile Card</h3><p>Animated horizon visualization from a live SDA query</p></div>
+      <span class="lesson-tag tag-javascript">JavaScript</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>This function renders an animated soil profile card — horizon bars colored by depth and OM, with AWC values — for any clicked map unit. This is the heart of the <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/soil-atlas.html" target="_blank">Soil Atlas detail panel</a>.</p>
+      <pre><span class="kw">async function</span> <span class="fn">renderSoilProfile</span>(areasymbol, musym, container) {
+  container.innerHTML = <span class="st">'&lt;p style="color:#38bdf8"&gt;⟳ Loading profile…&lt;/p&gt;'</span>;
+  <span class="kw">const</span> body = <span class="kw">new</span> URLSearchParams({ format: <span class="st">'JSON+COLUMNNAME'</span>, query: `
+    SELECT c.compname, c.comppct_r, c.drainagecl,
+           ch.hzname, ch.hzdept_r, ch.hzdepb_r,
+           ch.om_r, ch.awc_r, ch.sandtotal_r, ch.claytotal_r
+    FROM legend l
+    INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+    INNER JOIN component c ON c.mukey  = mu.mukey
+    INNER JOIN chorizon ch ON ch.cokey = c.cokey
+    WHERE l.areasymbol = '${areasymbol}'
+      AND mu.musym     = '${musym}'
+      AND c.majcompflag = 'Yes'
+    ORDER BY c.comppct_r DESC, ch.hzdept_r
+  `});
+
+  <span class="kw">const</span> [headers, , ...rows] = (<span class="kw">await</span> fetch(SDA,{method:<span class="st">'POST'</span>,body}).then(r=&gt;r.json())).Table;
+  <span class="kw">const</span> data = rows.map(r =&gt; Object.fromEntries(headers.map((h,i)=&gt;[h,r[i]])));
+  <span class="kw">if</span> (!data.length) { container.innerHTML=<span class="st">'No data'</span>; <span class="kw">return</span>; }
+
+  <span class="kw">const</span> maxDepth = Math.max(...data.map(d =&gt; +(d.hzdepb_r)||<span class="nu">0</span>));
+  <span class="kw">const</span> hzColors = [<span class="st">'#2d1a06'</span>,<span class="st">'#4a3018'</span>,<span class="st">'#6b4a28'</span>,<span class="st">'#8b6040'</span>,<span class="st">'#a07848'</span>];
+  <span class="kw">const</span> comp = data[<span class="nu">0</span>];
+
+  container.innerHTML = `
+    &lt;div style="font-family:monospace;font-size:12px;background:#0a0e1a;
+                border-radius:8px;padding:16px"&gt;
+      &lt;div style="color:#c8a84b;font-weight:700;margin-bottom:8px"&gt;
+        ${musym} · ${comp.compname} (${comp.comppct_r}%) · ${comp.drainagecl}
+      &lt;/div&gt;
+      ${data.map((d, i) =&gt; {
+        <span class="kw">const</span> thick = (+d.hzdepb_r - +d.hzdept_r)||<span class="nu">0</span>;
+        <span class="kw">const</span> pct   = (thick / maxDepth * <span class="nu">100</span>).toFixed(<span class="nu">0</span>);
+        <span class="kw">return</span> `
+          &lt;div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"&gt;
+            &lt;span style="width:56px;color:#5a6490;text-align:right;font-size:10px"&gt;
+              ${d.hzdept_r}–${d.hzdepb_r} cm
+            &lt;/span&gt;
+            &lt;div style="flex:1;background:#181e30;border-radius:2px;height:22px;overflow:hidden"&gt;
+              &lt;div class="hz-anim" style="background:${hzColors[i%hzColors.length]};
+                height:100%;width:0;display:flex;align-items:center;padding:0 8px;
+                transition:width 1s ease" data-w="${pct}"&gt;
+                &lt;span style="color:rgba(255,255,255,.8);font-size:10px;white-space:nowrap"&gt;
+                  ${d.hzname} · OM ${d.om_r||'—'}%
+                &lt;/span&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+            &lt;span style="width:48px;color:#c8a84b;font-size:10px;text-align:right"&gt;
+              ${d.awc_r ? d.awc_r+' AWC' : '—'}
+            &lt;/span&gt;
+          &lt;/div&gt;`;
+      }).join(<span class="st">''</span>)}
+    &lt;/div&gt;`;
+  <span class="co">// Animate bars</span>
+  setTimeout(() =&gt; container.querySelectorAll(<span class="st">'.hz-anim'</span>).forEach(
+    b =&gt; b.style.width = b.dataset.w + <span class="st">'%'</span>
+  ), <span class="nu">100</span>);
+}</pre>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top:48px;padding:32px;background:var(--panel);border-radius:var(--radius);border:1px solid var(--border)">
+    <div class="eyebrow">Try It Live</div>
+    <h2 class="section-h2" style="font-size:1.8rem">Open the <em>Query Lab</em></h2>
+    <p>Run any SQL query live against SDA in a full-screen sandbox — with example queries, syntax highlighting, and CSV export.</p>
+    <a href="query-runner.html" style="display:inline-block;padding:10px 22px;background:var(--accent);color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;margin-top:8px">Open Query Lab →</a>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training · <a href="index.html">Home</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a></p>
+</footer>
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>

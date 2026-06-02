@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python API Track — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link active" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">NRCS Soil Intelligence ↗</a>
+</nav>
+
+<section class="hero darker">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow"><span class="lesson-tag tag-python" style="display:inline">PYTHON</span> API Track · 5 Lessons</div>
+    <h1>Python API<br><em>Track</em></h1>
+    <p class="lead">Call SSURGO from Python using <code>requests</code>, <code>pandas</code>, and soilDB-style wrappers. Five lessons from first call to full analysis pipeline.</p>
+    <div class="note" style="max-width:60ch;margin-top:24px"><strong>Prerequisites:</strong> <code>pip install requests pandas matplotlib</code> — all standard packages, no exotic dependencies.</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="progress-bar reveal">
+    <span class="pb-label">Lessons</span>
+    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
+  </div>
+
+  <!-- Lesson 1 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">01</span>
+      <div class="lesson-title"><h3>Your First Python Call</h3><p>requests.post() → parse JSON → print results</p></div>
+      <span class="lesson-tag tag-python">Python</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>The SDA API accepts a POST request with a <code>query</code> parameter and returns JSON. The response structure is always: <code>Table[0]</code> = column names, <code>Table[1]</code> = types (skip), <code>Table[2:]</code> = data rows.</p>
+      <pre><span class="kw">import</span> requests
+
+SDA_URL = <span class="st">"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"</span>
+
+<span class="kw">def</span> <span class="fn">query_sda</span>(sql):
+    <span class="st">"""POST a SQL query to SDA, return list of row dicts."""</span>
+    resp = requests.post(
+        SDA_URL,
+        data={<span class="st">"query"</span>: sql, <span class="st">"format"</span>: <span class="st">"JSON+COLUMNNAME"</span>}
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    <span class="kw">if</span> <span class="st">"Table"</span> <span class="kw">not in</span> data <span class="kw">or</span> len(data[<span class="st">"Table"</span>]) &lt; <span class="nu">2</span>:
+        <span class="kw">return</span> []
+    headers = data[<span class="st">"Table"</span>][<span class="nu">0</span>]
+    rows    = data[<span class="st">"Table"</span>][<span class="nu">2</span>:]  <span class="co"># row 1 = types, skip it</span>
+    <span class="kw">return</span> [dict(zip(headers, row)) <span class="kw">for</span> row <span class="kw">in</span> rows]
+
+<span class="co"># Try it</span>
+results = query_sda(
+    <span class="st">"SELECT TOP 5 mukey, musym, muname, muacres FROM mapunit ORDER BY muacres DESC"</span>
+)
+<span class="kw">for</span> r <span class="kw">in</span> results:
+    print(f<span class="st">"{r['musym']:10s}  {r['muname'][:40]:40s}  {r['muacres']} ac"</span>)</pre>
+      <div class="tip" style="margin-top:16px"><strong>JSON Response Structure:</strong><br>
+      <code>data["Table"][0]</code> = <code>["mukey", "musym", "muname", "muacres"]</code><br>
+      <code>data["Table"][1]</code> = <code>["String", "String", "String", "Float"]</code> (skip this)<br>
+      <code>data["Table"][2]</code> = <code>["462955", "ApA", "Antigo silt loam…", "18234.5"]</code></div>
+    </div>
+  </div>
+
+  <!-- Lesson 2 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">02</span>
+      <div class="lesson-title"><h3>pandas DataFrame from SDA</h3><p>Convert any SDA result to a DataFrame in 3 lines</p></div>
+      <span class="lesson-tag tag-python">Python</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>Once you have a DataFrame, all of pandas' analysis and visualization tools are available — filtering, pivoting, groupby, plotting.</p>
+      <pre><span class="kw">import</span> requests
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+SDA_URL = <span class="st">"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"</span>
+
+<span class="kw">def</span> <span class="fn">sda_to_df</span>(sql):
+    resp = requests.post(SDA_URL, data={<span class="st">"query"</span>: sql, <span class="st">"format"</span>: <span class="st">"JSON+COLUMNNAME"</span>})
+    data = resp.json()
+    headers = data[<span class="st">"Table"</span>][<span class="nu">0</span>]
+    rows    = data[<span class="st">"Table"</span>][<span class="nu">2</span>:]
+    <span class="kw">return</span> pd.DataFrame(rows, columns=headers)
+
+<span class="co"># Organic matter by drainage class — Iowa</span>
+sql = <span class="st">"""
+SELECT
+    c.drainagecl,
+    ROUND(AVG(CAST(ch.om_r AS FLOAT)), 3) AS avg_om_pct,
+    COUNT(DISTINCT c.cokey)               AS n_components
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol LIKE 'IA%'
+  AND c.majcompflag = 'Yes'
+  AND ch.hzdept_r = 0
+  AND ch.om_r IS NOT NULL
+GROUP BY c.drainagecl
+ORDER BY avg_om_pct DESC
+"""</span>
+
+df = sda_to_df(sql)
+df[<span class="st">'avg_om_pct'</span>] = pd.to_numeric(df[<span class="st">'avg_om_pct'</span>])
+print(df.to_string(index=<span class="kw">False</span>))
+print(f<span class="st">"\nHighest OM class: {df.iloc[0]['drainagecl']}"</span>)
+print(f<span class="st">"Range: {df['avg_om_pct'].min():.2f}% – {df['avg_om_pct'].max():.2f}%"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 3 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">03</span>
+      <div class="lesson-title"><h3>Batched Queries — Large Datasets</h3><p>Query dozens of survey areas without hitting row limits</p></div>
+      <span class="lesson-tag tag-python">Python</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>SDA's immediate mode handles ~10,000 rows in ~30 seconds. For larger datasets, chunk your survey areas into batches of 10–15 and loop, respecting the API with small delays.</p>
+      <pre><span class="kw">import</span> requests, pandas <span class="kw">as</span> pd, time
+
+SDA_URL = <span class="st">"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"</span>
+
+<span class="kw">def</span> <span class="fn">batch_query</span>(areasymbols, chunk_size=<span class="nu">10</span>):
+    all_frames = []
+    <span class="kw">for</span> i <span class="kw">in</span> range(<span class="nu">0</span>, len(areasymbols), chunk_size):
+        chunk = areasymbols[i:i+chunk_size]
+        placeholders = <span class="st">"','"</span>.join(chunk)
+        sql = f<span class="st">"""
+        SELECT l.areasymbol, mu.musym, mu.muname,
+               c.compname, c.comppct_r, c.hydgrp
+        FROM legend l
+        INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+        INNER JOIN component c ON c.mukey  = mu.mukey
+        WHERE l.areasymbol IN ('{placeholders}')
+          AND c.majcompflag = 'Yes'
+        """</span>
+        resp = requests.post(SDA_URL, data={<span class="st">"query"</span>: sql, <span class="st">"format"</span>: <span class="st">"JSON+COLUMNNAME"</span>})
+        data = resp.json()
+        <span class="kw">if</span> <span class="st">"Table"</span> <span class="kw">in</span> data <span class="kw">and</span> len(data[<span class="st">"Table"</span>]) >= <span class="nu">3</span>:
+            all_frames.append(pd.DataFrame(data[<span class="st">"Table"</span>][<span class="nu">2</span>:], columns=data[<span class="st">"Table"</span>][<span class="nu">0</span>]))
+        time.sleep(<span class="nu">0.3</span>)   <span class="co"># polite API usage</span>
+    <span class="kw">return</span> pd.concat(all_frames, ignore_index=<span class="kw">True</span>) <span class="kw">if</span> all_frames <span class="kw">else</span> pd.DataFrame()
+
+<span class="co"># Midwest corn belt survey areas</span>
+midwest = [<span class="st">'IA001'</span>,<span class="st">'IA003'</span>,<span class="st">'IL001'</span>,<span class="st">'IL003'</span>,<span class="st">'IN001'</span>,<span class="st">'MN001'</span>,<span class="st">'MN003'</span>,<span class="st">'WI001'</span>,<span class="st">'WI003'</span>]
+df = batch_query(midwest)
+print(f<span class="st">"Retrieved {len(df):,} rows across {df['areasymbol'].nunique()} survey areas"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 4 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">04</span>
+      <div class="lesson-title"><h3>soilDB-Style Python Wrapper</h3><p>Build a reusable SDA client class</p></div>
+      <span class="lesson-tag tag-python">Python</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <div class="note"><strong>soilDB</strong> is the gold standard R package for SSURGO queries (NCSS Tech Staff). For Python, the pattern below gives you a similar ergonomic API using <code>requests</code> + <code>pandas</code>.</div>
+      <pre><span class="st">"""
+Python SDA client — inspired by R's soilDB package
+"""</span>
+<span class="kw">import</span> requests, pandas <span class="kw">as</span> pd
+
+SDA_URL = <span class="st">"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"</span>
+
+<span class="kw">def</span> <span class="fn">_post</span>(sql):
+    r = requests.post(SDA_URL, data={<span class="st">"query"</span>: sql, <span class="st">"format"</span>: <span class="st">"JSON+COLUMNNAME"</span>})
+    d = r.json()
+    <span class="kw">if</span> <span class="st">"Table"</span> <span class="kw">not in</span> d <span class="kw">or</span> len(d[<span class="st">"Table"</span>]) &lt; <span class="nu">3</span>:
+        <span class="kw">return</span> pd.DataFrame()
+    <span class="kw">return</span> pd.DataFrame(d[<span class="st">"Table"</span>][<span class="nu">2</span>:], columns=d[<span class="st">"Table"</span>][<span class="nu">0</span>])
+
+<span class="kw">def</span> <span class="fn">fetchSDA_component</span>(areasymbol, majcomp_only=<span class="kw">True</span>):
+    flag = <span class="st">"AND c.majcompflag = 'Yes'"</span> <span class="kw">if</span> majcomp_only <span class="kw">else</span> <span class="st">""</span>
+    <span class="kw">return</span> _post(f<span class="st">"""
+        SELECT mu.musym, mu.muname, mu.muacres,
+               c.cokey, c.compname, c.comppct_r,
+               c.taxclname, c.drainagecl, c.hydgrp
+        FROM legend l
+        INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+        INNER JOIN component c ON c.mukey  = mu.mukey
+        WHERE l.areasymbol = '{areasymbol}' {flag}
+        ORDER BY mu.musym, c.comppct_r DESC
+    """</span>)
+
+<span class="kw">def</span> <span class="fn">fetchSDA_horizon</span>(areasymbol):
+    <span class="kw">return</span> _post(f<span class="st">"""
+        SELECT mu.musym, c.compname, c.comppct_r,
+               ch.hzname, ch.hzdept_r, ch.hzdepb_r,
+               ch.om_r, ch.awc_r, ch.ph1to1h2o_r,
+               ch.sandtotal_r, ch.claytotal_r
+        FROM legend l
+        INNER JOIN mapunit mu  ON mu.lkey  = l.lkey
+        INNER JOIN component c ON c.mukey  = mu.mukey
+        INNER JOIN chorizon ch ON ch.cokey = c.cokey
+        WHERE l.areasymbol = '{areasymbol}'
+          AND c.majcompflag = 'Yes'
+        ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r
+    """</span>)
+
+<span class="co"># Usage</span>
+comps = fetchSDA_component(<span class="st">'WI025'</span>)
+hzns  = fetchSDA_horizon(<span class="st">'WI025'</span>)
+print(f<span class="st">"Components: {len(comps)}, Horizons: {len(hzns)}"</span>)</pre>
+    </div>
+  </div>
+
+  <!-- Lesson 5 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">05</span>
+      <div class="lesson-title"><h3>Full Pipeline — Query → DataFrame → Chart</h3><p>End-to-end analysis with matplotlib</p></div>
+      <span class="lesson-tag tag-python">Python</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>Combining everything: a single script that queries SDA, processes results into a DataFrame, and produces a publication-quality chart comparing OM by soil taxonomy order and depth.</p>
+      <pre><span class="st">"""
+Full pipeline: SDA → pandas → matplotlib
+Organic matter by depth for different soil orders
+"""</span>
+<span class="kw">import</span> requests, pandas <span class="kw">as</span> pd, matplotlib.pyplot <span class="kw">as</span> plt
+
+SDA_URL = <span class="st">"https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest"</span>
+
+<span class="kw">def</span> <span class="fn">q</span>(sql):
+    r = requests.post(SDA_URL, data={<span class="st">"query"</span>: sql, <span class="st">"format"</span>: <span class="st">"JSON+COLUMNNAME"</span>})
+    d = r.json()
+    <span class="kw">return</span> pd.DataFrame(d[<span class="st">"Table"</span>][<span class="nu">2</span>:], columns=d[<span class="st">"Table"</span>][<span class="nu">0</span>]) <span class="kw">if</span> <span class="st">"Table"</span> <span class="kw">in</span> d <span class="kw">else</span> pd.DataFrame()
+
+df = q(<span class="st">"""
+SELECT c.taxorder,
+    CASE
+        WHEN ch.hzdepb_r <=  20 THEN '0-20 cm'
+        WHEN ch.hzdepb_r <=  50 THEN '20-50 cm'
+        WHEN ch.hzdepb_r <= 100 THEN '50-100 cm'
+        ELSE '100+ cm'
+    END AS depth_zone,
+    ROUND(AVG(CAST(ch.om_r AS FLOAT)), 3) AS avg_om
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol LIKE 'IA%'
+  AND c.majcompflag = 'Yes'
+  AND c.taxorder IN ('mollisols','alfisols','inceptisols')
+  AND ch.om_r IS NOT NULL
+GROUP BY c.taxorder,
+    CASE WHEN ch.hzdepb_r&lt;=20 THEN '0-20 cm'
+         WHEN ch.hzdepb_r&lt;=50 THEN '20-50 cm'
+         WHEN ch.hzdepb_r&lt;=100 THEN '50-100 cm'
+         ELSE '100+ cm' END
+ORDER BY c.taxorder, MIN(ch.hzdept_r)
+"""</span>)
+
+df[<span class="st">'avg_om'</span>] = pd.to_numeric(df[<span class="st">'avg_om'</span>])
+fig, ax = plt.subplots(figsize=(<span class="nu">10</span>, <span class="nu">5</span>))
+<span class="kw">for</span> order, grp <span class="kw">in</span> df.groupby(<span class="st">'taxorder'</span>):
+    ax.plot(grp[<span class="st">'depth_zone'</span>], grp[<span class="st">'avg_om'</span>], marker=<span class="st">'o'</span>, label=order.title())
+ax.set_xlabel(<span class="st">'Depth Zone'</span>); ax.set_ylabel(<span class="st">'Avg OM (%)'</span>)
+ax.set_title(<span class="st">'Organic Matter by Depth — Iowa Soils by Taxonomy Order'</span>)
+ax.legend(); ax.grid(alpha=<span class="nu">0.3</span>)
+plt.tight_layout()
+plt.savefig(<span class="st">'iowa_om_depth.png'</span>, dpi=<span class="nu">150</span>)
+print(<span class="st">"Saved iowa_om_depth.png"</span>)</pre>
+      <div class="tip" style="margin-top:16px"><strong>Expected result:</strong> Mollisols (prairie soils) have the highest OM at all depths — 4–6% at surface, declining with depth. Alfisols and Inceptisols show much lower values. This pattern reflects millions of years of organic matter accumulation under native grasslands.</div>
+    </div>
+  </div>
+
+  <div class="reveal" style="margin-top:48px;padding:32px;background:var(--panel);border-radius:var(--radius);border:1px solid var(--border)">
+    <div class="eyebrow">Up Next</div>
+    <h2 class="section-h2" style="font-size:1.8rem">Take It to the <em>Browser</em></h2>
+    <p>Query SDA directly from JavaScript — no server required. Build live tables, connect to MapLibre GL maps, and ship interactive soil apps.</p>
+    <a href="api-javascript.html" style="display:inline-block;padding:10px 22px;background:#fbbf24;color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none;margin-top:8px">JavaScript API →</a>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training · <a href="index.html">Home</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a></p>
+</footer>
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>

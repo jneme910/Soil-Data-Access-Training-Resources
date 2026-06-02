@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSURGO Data Model Reference — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link active" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/data-models.html" target="_blank" rel="noopener" style="color:var(--soil)">Full Schema ↗</a>
+</nav>
+
+<section class="hero darker">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">134 Tables · 35 Relationships · The Architecture</div>
+    <h1>The SSURGO<br><em>Data Model</em></h1>
+    <p class="lead">Understanding the schema is the difference between struggling with SSURGO and mastering it. This is your permanent reference — join chain, key tables, live column lookup, and the most common mistakes.</p>
+  </div>
+</section>
+
+<!-- Core Join Chain -->
+<section class="section darker">
+  <div class="eyebrow">The Foundation</div>
+  <h2 class="section-h2">The Core <em>Join Chain</em></h2>
+  <p class="lead">Every SSURGO query follows this spine. Four tables. Three joins. One pattern to rule them all.</p>
+
+  <!-- Visual diagram -->
+  <div style="overflow-x:auto;padding-bottom:8px;margin-bottom:32px">
+    <div style="display:flex;align-items:stretch;gap:0;min-width:720px">
+      <!-- legend -->
+      <div style="flex:1;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.3);border-radius:8px 0 0 8px;padding:20px 20px">
+        <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#38bdf8;margin-bottom:10px">Survey Area</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;color:#38bdf8;font-weight:700;margin-bottom:12px">legend</div>
+        <div style="font-size:11px;color:var(--dim);line-height:2;font-family:var(--mono)">
+          <strong style="color:#38bdf8">lkey</strong> — Primary Key<br>
+          areasymbol — e.g. WI025<br>
+          areaname — Dane County<br>
+          saverest — Last updated
+        </div>
+        <div style="margin-top:14px;font-size:10px;color:var(--dimmer)">~3,500 rows</div>
+      </div>
+      <div style="width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--dimmer);writing-mode:vertical-lr;text-align:center">lkey</div>
+        <div style="color:var(--dim);font-size:16px;margin:4px 0">→</div>
+      </div>
+      <!-- mapunit -->
+      <div style="flex:1;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3);border-top:1px solid rgba(34,197,94,.3);border-bottom:1px solid rgba(34,197,94,.3);padding:20px">
+        <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#22c55e;margin-bottom:10px">Map Unit</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;color:#22c55e;font-weight:700;margin-bottom:12px">mapunit</div>
+        <div style="font-size:11px;color:var(--dim);line-height:2;font-family:var(--mono)">
+          <strong style="color:#22c55e">mukey</strong> — Primary Key<br>
+          lkey — FK → legend<br>
+          musym — Map symbol<br>
+          muname — Unit name<br>
+          muacres — Acreage
+        </div>
+        <div style="margin-top:14px;font-size:10px;color:var(--dimmer)">~180K rows</div>
+      </div>
+      <div style="width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--dimmer);writing-mode:vertical-lr;text-align:center">mukey</div>
+        <div style="color:var(--dim);font-size:16px;margin:4px 0">→</div>
+      </div>
+      <!-- component -->
+      <div style="flex:1;background:rgba(200,168,75,.08);border:1px solid rgba(200,168,75,.3);border-top:1px solid rgba(200,168,75,.3);border-bottom:1px solid rgba(200,168,75,.3);padding:20px">
+        <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#c8a84b;margin-bottom:10px">Component</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;color:#c8a84b;font-weight:700;margin-bottom:12px">component</div>
+        <div style="font-size:11px;color:var(--dim);line-height:2;font-family:var(--mono)">
+          <strong style="color:#c8a84b">cokey</strong> — Primary Key<br>
+          mukey — FK → mapunit<br>
+          compname — Soil name<br>
+          comppct_r — Coverage %<br>
+          majcompflag — Major?<br>
+          drainagecl — Drainage
+        </div>
+        <div style="margin-top:14px;font-size:10px;color:var(--dimmer)">~300K+ rows</div>
+      </div>
+      <div style="width:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--dimmer);writing-mode:vertical-lr;text-align:center">cokey</div>
+        <div style="color:var(--dim);font-size:16px;margin:4px 0">→</div>
+      </div>
+      <!-- chorizon -->
+      <div style="flex:1;background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.3);border-radius:0 8px 8px 0;padding:20px">
+        <div style="font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#f97316;margin-bottom:10px">Horizon</div>
+        <div style="font-family:var(--mono);font-size:1.2rem;color:#f97316;font-weight:700;margin-bottom:12px">chorizon</div>
+        <div style="font-size:11px;color:var(--dim);line-height:2;font-family:var(--mono)">
+          <strong style="color:#f97316">chkey</strong> — Primary Key<br>
+          cokey — FK → component<br>
+          hzname — Ap, B, C…<br>
+          hzdept_r — Top depth cm<br>
+          om_r — Organic matter %<br>
+          awc_r — Available water
+        </div>
+        <div style="margin-top:14px;font-size:10px;color:var(--dimmer)">~1M+ rows</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The canonical query -->
+  <div class="sql-panel reveal">
+    <div class="sql-toolbar">
+      <span class="sql-toolbar-label">The Canonical SSURGO Query — All Four Tables</span>
+      <button class="btn-copy">Copy</button>
+      <button class="btn-run">▶ Run on SDA</button>
+    </div>
+    <textarea class="sql-editor" style="height:150px">SELECT TOP 20
+  l.areasymbol, mu.musym, mu.muname,
+  c.compname, c.comppct_r,
+  ch.hzname, ch.hzdept_r AS top_cm, ch.hzdepb_r AS bot_cm,
+  ch.om_r AS organic_matter_pct, ch.awc_r AS avail_water_cap
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey
+LEFT  JOIN chorizon  ch ON ch.cokey = c.cokey
+WHERE l.areasymbol = 'WI025' AND c.majcompflag = 'Yes'
+ORDER BY mu.musym, c.comppct_r DESC, ch.hzdept_r</textarea>
+    <div class="sql-result"></div>
+  </div>
+
+  <!-- Extended joins -->
+  <div style="margin-top:40px">
+    <div style="font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:16px">Extended Relationships</div>
+    <div class="card-grid">
+      <div class="card" style="border-left:3px solid rgba(56,189,248,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#38bdf8;margin-bottom:6px">mapunit → muaggatt</div>
+        <p style="font-size:.8rem">Pre-aggregated map unit attributes — 150+ soil properties already summarized. AWS, KSAT, flooding frequency, farmland class. Use when you don't need component-level detail.</p>
+      </div>
+      <div class="card" style="border-left:3px solid rgba(200,168,75,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#c8a84b;margin-bottom:6px">component → cointerp</div>
+        <p style="font-size:.8rem">Soil interpretation ratings — NCCPI productivity, Fragile Soil Index, drainage suitability, building site ratings. Join on cokey, filter by mrulename and ruledepth=0.</p>
+      </div>
+      <div class="card" style="border-left:3px solid rgba(200,168,75,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#c8a84b;margin-bottom:6px">component → corestrictions</div>
+        <p style="font-size:.8rem">Root-limiting layers: fragipan, lithic bedrock, paralithic bedrock, duripan. Use to find depth-to-restriction for root zone depth calculations.</p>
+      </div>
+      <div class="card" style="border-left:3px solid rgba(249,115,22,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#f97316;margin-bottom:6px">chorizon → chtexturegrp</div>
+        <p style="font-size:.8rem">Texture class and modifier for each horizon. Join on chkey, filter rvindicator='Yes' for representative value. Returns sandy loam, silty clay loam, etc.</p>
+      </div>
+      <div class="card" style="border-left:3px solid rgba(249,115,22,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#f97316;margin-bottom:6px">chorizon → chfrags</div>
+        <p style="font-size:.8rem">Rock fragment type, shape, hardness, and volume % for each horizon. Essential for SOC calculations (fragment correction) and construction suitability.</p>
+      </div>
+      <div class="card" style="border-left:3px solid rgba(56,189,248,.4)">
+        <div style="font-family:var(--mono);font-size:.85rem;color:#38bdf8;margin-bottom:6px">mapunit → muaoverlap → laoverlap</div>
+        <p style="font-size:.8rem">MLRA overlap — which Major Land Resource Areas a map unit falls in. Used for regional soil analysis and NCCPI normalization within MLRAs.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Live Column Lookup -->
+<section class="section dark">
+  <div class="eyebrow">Live Reference</div>
+  <h2 class="section-h2">Find Any <em>Column</em></h2>
+  <p class="lead">Search any table name to see its columns, data types, and descriptions — fetched live from SDA MetadataColumn.</p>
+
+  <div style="display:flex;gap:10px;margin-bottom:20px;max-width:600px">
+    <div style="position:relative;flex:1">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px">🔍</span>
+      <input id="tbl-search" type="text" placeholder="Enter table name (e.g. chorizon, component, mapunit)…"
+        style="width:100%;padding:11px 14px 11px 38px;background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;font-size:14px;outline:none;font-family:var(--font)">
+    </div>
+    <button id="tbl-lookup-btn" style="padding:11px 20px;background:var(--accent);color:#000;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font)">Look Up</button>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
+    <span style="font-size:10px;color:var(--dimmer);align-self:center">Quick:</span>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">legend</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">mapunit</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">component</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">chorizon</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">cointerp</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">muaggatt</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">corestrictions</button>
+    <button class="quick-tbl" style="padding:4px 12px;border:1px solid var(--border);border-radius:999px;background:var(--panel2);color:var(--dim);font-size:11px;cursor:pointer;font-family:var(--font)">chtexturegrp</button>
+  </div>
+
+  <div id="col-result" style="background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:20px;min-height:80px;color:var(--dim);font-size:.9rem">
+    Enter a table name and click Look Up to see its columns.
+  </div>
+</section>
+
+<!-- Common Mistakes -->
+<section class="section">
+  <div class="eyebrow">Avoid These</div>
+  <h2 class="section-h2">Four Common <em>Mistakes</em></h2>
+  <div class="card-grid">
+    <div class="card" style="border-left:3px solid var(--red)">
+      <h3 style="color:var(--red)">1. Forgetting majcompflag</h3>
+      <p>Without <code>AND c.majcompflag = 'Yes'</code>, you get every component including minor inclusions that cover only 5–10% of a map unit. Your results will have 3–10× more rows than expected and weighted averages will be skewed.</p>
+      <div class="tip" style="margin-top:8px"><strong>Fix:</strong> Always add <code>AND c.majcompflag = 'Yes'</code> when you want dominant soil data.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--red)">
+      <h3 style="color:var(--red)">2. Wrong JOIN key for legend</h3>
+      <p>A common mistake is joining legend to mapunit using <code>ON l.areasymbol = mu.areasymbol</code> — but mapunit has no areasymbol column. The correct join is always <code>ON mu.lkey = l.lkey</code>.</p>
+      <div class="tip" style="margin-top:8px"><strong>Fix:</strong> <code>INNER JOIN mapunit mu ON mu.lkey = l.lkey</code></div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <h3 style="color:var(--orange)">3. Temp tables in SDA REST</h3>
+      <p>The SDA <code>/Tabular/post.rest</code> endpoint does not support <code>#temp tables</code>, <code>CREATE TABLE</code>, or <code>INSERT INTO</code>. These require SQL Server Management Studio. Use CTEs (<code>WITH ... AS</code>) instead — they work identically in SDA.</p>
+      <div class="note" style="margin-top:8px"><strong>Alternative:</strong> Use the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> for multi-step temp table scripts.</div>
+    </div>
+    <div class="card" style="border-left:3px solid var(--orange)">
+      <h3 style="color:var(--orange)">4. NULL AWC values in calculations</h3>
+      <p>Horizon AWC (<code>awc_r</code>) can be NULL for organic surface layers, bedrock, and water features. A raw multiplication will return NULL for the entire horizon sum.</p>
+      <div class="tip" style="margin-top:8px"><strong>Fix:</strong> Use <code>ISNULL(ch.awc_r, 0)</code> in AWS calculations to treat NULL as zero thickness contribution.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Companion -->
+<section class="section dark">
+  <div class="eyebrow">Go Deeper</div>
+  <h2 class="section-h2">Full Interactive <em>Schema Explorer</em></h2>
+  <p class="lead">The NRCS Soil Intelligence companion site has a D3 force-directed ER diagram of all 134 SSURGO tables, sortable column browser with all 12 metadata fields, and a live domain value decoder.</p>
+  <div class="card-grid" style="grid-template-columns:1fr 1fr;max-width:800px">
+    <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/data-models.html" target="_blank" rel="noopener" class="companion-box card" style="text-decoration:none">
+      <span class="companion-icon">🔗</span>
+      <div class="companion-body">
+        <div class="label">NRCS Companion</div>
+        <strong>Interactive ER Diagram</strong>
+        <span>134 tables · D3 force layout · Domain decoder · Sort by any field</span>
+      </div>
+      <span class="companion-arrow">↗</span>
+    </a>
+    <a href="query-runner.html" class="companion-box card" style="text-decoration:none">
+      <span class="companion-icon">⚗️</span>
+      <div class="companion-body">
+        <div class="label">This Site</div>
+        <strong>Query Lab</strong>
+        <span>Live SDA sandbox — run any query, see results instantly</span>
+      </div>
+      <span class="companion-arrow">→</span>
+    </a>
+  </div>
+  <div class="note" style="max-width:700px;margin-top:20px"><strong>Note:</strong> The companion ER diagram link points to the NRCS Soil Intelligence GitHub Pages site, maintained as a separate repository. If it doesn't resolve, check <a href="https://github.com/jneme910/NRCS-Soil-Data-Access" target="_blank">github.com/jneme910/NRCS-Soil-Data-Access</a>.</div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training · <a href="index.html">Home</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a> · <a href="https://sdmdataaccess.nrcs.usda.gov/documents/TablesAndColumnsReport.pdf" target="_blank">Tables &amp; Columns PDF</a></p>
+</footer>
+
+<script src="assets/sda-runner.js"></script>
+<script>
+const SDA = 'https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
+const inp = document.getElementById('tbl-search');
+const btn = document.getElementById('tbl-lookup-btn');
+const res = document.getElementById('col-result');
+
+async function lookupTable(tbl) {
+  if (!tbl) return;
+  res.innerHTML = '<span class="spin">⟳</span> Loading columns from SDA…';
+  try {
+    const sql = `SELECT ColumnOrdinalPosition, ColumnPhysicalName, ColumnLabel, ColumnLogicalDataType, ColumnSize, PrimaryKeyFlag, NotNullFlag, ColumnDescription FROM MetadataColumn WHERE TablePhysicalName='${tbl}' ORDER BY ColumnOrdinalPosition`;
+    const body = new URLSearchParams({ query: sql, format: 'JSON+COLUMNNAME' });
+    const resp = await fetch(SDA, { method: 'POST', body });
+    const data = await resp.json();
+    if (!data.Table || data.Table.length < 3) {
+      res.innerHTML = `<span style="color:var(--red)">Table "${tbl}" not found in SDA MetadataColumn.</span>`;
+      return;
+    }
+    const [, , ...rows] = data.Table;
+    res.innerHTML = `
+      <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soil);margin-bottom:12px">
+        ${tbl} — ${rows.length} columns
+      </div>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr>
+            <th style="background:var(--panel3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border)">#</th>
+            <th style="background:var(--panel3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border)">Physical Name</th>
+            <th style="background:var(--panel3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border)">Label</th>
+            <th style="background:var(--panel3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border)">Type</th>
+            <th style="background:var(--panel3);padding:7px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);border-bottom:1px solid var(--border)">Description</th>
+          </tr></thead>
+          <tbody>${rows.map(r => `
+            <tr style="border-bottom:1px solid var(--border)">
+              <td style="padding:6px 12px;color:var(--dimmer);font-size:11px">${r[0]}</td>
+              <td style="padding:6px 12px;font-family:Courier New,monospace;font-size:12px;color:${r[5]==='Yes'?'#f59e0b':'#38bdf8'}">${r[1]}${r[5]==='Yes'?' <span style="font-size:9px;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#f59e0b;padding:1px 5px;border-radius:3px;margin-left:4px">PK</span>':''}</td>
+              <td style="padding:6px 12px;color:var(--text);font-size:11px">${r[2]||''}</td>
+              <td style="padding:6px 12px;font-family:Courier New,monospace;font-size:11px;color:#f97316">${r[3]||''}${r[4]?`(${r[4]})`:''}${r[6]==='Yes'?' <span style="color:#22c55e;font-size:10px">NN</span>':''}</td>
+              <td style="padding:6px 12px;color:var(--dim);font-size:11px;max-width:320px">${(r[7]||'').slice(0,200)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    res.innerHTML = `<span style="color:var(--red)">Error: ${e.message}</span>`;
+  }
+}
+
+btn.addEventListener('click', () => lookupTable(inp.value.trim().toLowerCase()));
+inp.addEventListener('keydown', e => { if (e.key==='Enter') btn.click(); });
+document.querySelectorAll('.quick-tbl').forEach(b => {
+  b.addEventListener('click', () => { inp.value = b.textContent; lookupTable(b.textContent); });
+  b.addEventListener('mouseenter', () => b.style.borderColor='var(--accent)');
+  b.addEventListener('mouseleave', () => b.style.borderColor='var(--border)');
+});
+</script>
+</body>
+</html>
