@@ -45,6 +45,72 @@
     <div class="eyebrow">Curriculum Overview</div>
     <h2 class="section-h2">What You'll <em>Learn</em></h2>
     <p class="lead">Three SQL tracks, two API tracks, one live query sandbox — everything built around real SSURGO data.</p>
+
+    <!-- Search -->
+    <div style="margin-bottom:24px;max-width:480px">
+      <div style="position:relative">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none">🔍</span>
+        <input id="lesson-search" type="search" placeholder="Search lessons — e.g. JOIN, carbon, pandas, AOI…"
+          style="width:100%;padding:10px 12px 10px 36px;background:var(--panel2);border:1px solid var(--border);
+                 color:var(--text);border-radius:8px;font-size:13px;font-family:var(--font);outline:none"
+          oninput="searchLessons(this.value)">
+      </div>
+      <div id="search-results" style="display:none;margin-top:12px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+    </div>
+    <script>
+    const LESSON_INDEX = [
+      {page:'beginner.html',   title:'Beginner SQL',       color:'var(--green)',
+       topics:'SELECT FROM WHERE ORDER BY TOP mukey musym muname legend mapunit survey area areasymbol basic filter sort limit acreage'},
+      {page:'intermediate.html',title:'Intermediate SQL',   color:'var(--gold)',
+       topics:'JOIN INNER LEFT GROUP BY COUNT SUM AVG CTE WITH CASE WHEN THEN ELSE available water storage AWC horizon chorizon awc_r thickness depth component comppct'},
+      {page:'expert.html',     title:'Expert SQL',          color:'var(--red)',
+       topics:'soil organic carbon SOC NCCPI fragile soil index FSI interpretation cointerp spatial AOI temp table #table bulk density fragment OM organic matter carbon productivity'},
+      {page:'api-python.html', title:'Python API',          color:'#60a5fa',
+       topics:'Python requests pandas DataFrame batch matplotlib visualization chart plot json post REST automation script'},
+      {page:'api-javascript.html',title:'JavaScript API',   color:'#fbbf24',
+       topics:'JavaScript JS fetch DOM table render MapLibre map module async await browser fetch API'},
+      {page:'macros.html',     title:'Macros & AOI',        color:'#a78bfa',
+       topics:'macro AOI pAOI persistent area of interest spatial clipping SDA_Get_Mukey WKT geometry interpret interpretation report GetClippedMapunits tilde Declare'},
+      {page:'query-runner.html',title:'Query Lab',           color:'var(--accent)',
+       topics:'live query sandbox run SDA test practice example execute results table'},
+      {page:'soil-model.html', title:'Data Model',           color:'var(--accent)',
+       topics:'134 tables schema join chain legend mapunit component chorizon cointerp muaggatt MetadataColumn areasymbol lkey cokey chkey common mistakes relationships ER diagram'},
+    ];
+    function searchLessons(q) {
+      const el = document.getElementById('search-results');
+      if (!q || q.length < 2) { el.style.display = 'none'; return; }
+      const term = q.toLowerCase();
+      const hits = LESSON_INDEX.filter(l =>
+        l.title.toLowerCase().includes(term) || l.topics.toLowerCase().includes(term)
+      );
+      if (!hits.length) {
+        el.style.display = 'block';
+        el.innerHTML = '<div style="padding:12px 16px;font-size:12px;color:var(--dim)">No lessons match that term.</div>';
+        return;
+      }
+      el.style.display = 'block';
+      el.innerHTML = hits.map(h => `
+        <a href="${h.page}" style="display:flex;align-items:center;gap:12px;padding:11px 16px;
+           text-decoration:none;border-bottom:1px solid var(--border);transition:background .12s"
+           onmouseover="this.style.background='rgba(56,189,248,.06)'" onmouseout="this.style.background=''">
+          <div style="width:8px;height:8px;border-radius:50%;background:${h.color};flex-shrink:0"></div>
+          <div>
+            <div style="font-weight:700;font-size:12px;color:var(--text)">${h.title}</div>
+            <div style="font-size:10px;color:var(--dim);margin-top:2px">${
+              h.topics.split(' ').filter(t => t.toLowerCase().includes(term.split(' ')[0])).slice(0,4).join(' · ') || h.topics.split(' ').slice(0,4).join(' · ')
+            }</div>
+          </div>
+          <span style="margin-left:auto;font-size:11px;color:var(--accent)">→</span>
+        </a>`).join('');
+    }
+    document.getElementById('lesson-search').addEventListener('focus', function() {
+      this.style.borderColor = 'var(--accent)';
+    });
+    document.getElementById('lesson-search').addEventListener('blur', function() {
+      this.style.borderColor = 'var(--border)';
+    });
+    </script>
+
     <div class="card-grid">
       <a href="beginner.html" class="card" style="text-decoration:none;border-left:3px solid var(--green)">
         <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Beginner SQL</div>
