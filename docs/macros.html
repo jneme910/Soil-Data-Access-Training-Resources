@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macros &amp; Advanced Queries — SDA Training</title>
+<link rel="stylesheet" href="assets/theme.css">
+<style>
+/* ── Macro badge ── */
+.macro-chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:3px 10px;
+  border-radius:4px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.3);
+  color:#a78bfa;margin:2px 3px 2px 0;line-height:1.6}
+/* ── Function table ── */
+.fn-table{width:100%;border-collapse:collapse;font-size:12px;margin:16px 0}
+.fn-table th{background:var(--panel3);color:var(--dim);padding:7px 12px;text-align:left;
+  font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;
+  border-bottom:1px solid var(--border)}
+.fn-table td{padding:6px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+.fn-table td:first-child{font-family:var(--mono);font-size:11px;color:#a78bfa;white-space:nowrap}
+.fn-table tr:hover td{background:var(--panel2)}
+/* ── Section TOC ── */
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:40px}
+.toc-link{padding:6px 14px;border:1px solid var(--border);border-radius:20px;font-size:11px;
+  color:var(--dim);text-decoration:none;transition:all .15s;font-weight:600}
+.toc-link:hover{border-color:var(--soil);color:var(--soil)}
+/* ── Chapter number label ── */
+.ch-num{font-family:var(--serif);font-size:3.5rem;color:var(--border2);line-height:1;
+  margin-bottom:4px;font-weight:400}
+/* ── Endpoint pill ── */
+.ep{display:inline-block;font-family:var(--mono);font-size:10px;padding:4px 10px;
+  border-radius:4px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);
+  color:var(--accent);margin:3px 0;line-height:1.7;white-space:pre}
+/* ── Tag advanced ── */
+.tag-advanced{color:var(--accent2);border-color:rgba(167,139,250,.35)}
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a class="nav-logo" href="index.html">SDA Training</a>
+  <div class="nav-sep"></div>
+  <a class="nav-link" href="index.html">Home</a>
+  <a class="nav-link" href="beginner.html">Beginner</a>
+  <a class="nav-link" href="intermediate.html">Intermediate</a>
+  <a class="nav-link" href="expert.html">Expert</a>
+  <a class="nav-link active" href="macros.html">Macros &amp; AOI</a>
+  <a class="nav-link" href="api-python.html">Python API</a>
+  <a class="nav-link" href="api-javascript.html">JS API</a>
+  <a class="nav-link" href="query-runner.html">Query Lab</a>
+  <a class="nav-link" href="soil-model.html">Data Model</a>
+  <div class="nav-space"></div>
+  <a class="nav-link" href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank" rel="noopener" style="color:var(--soil)">Soil Intelligence ↗</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero darker" style="background:#04060c">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="eyebrow">Advanced SDA · Macros · Spatial Functions · pAOI · Interpretations</div>
+    <h1>Macros &amp; Advanced<br><em>Soil Data Access</em></h1>
+    <p class="lead">Macros expand shorthand syntax into full SQL. Persistent Areas of Interest unlock spatial clipping, interpretation runs, and DocBook reports — all through the SDA REST endpoint. This guide covers every macro, function, and service call, with live examples.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+      <a href="#macros" style="padding:12px 24px;background:var(--accent2);color:#000;border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">Macros →</a>
+      <a href="#paoi" style="padding:12px 24px;border:1px solid var(--border2);color:var(--text);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background='transparent'">Persistent AOI</a>
+      <a href="#functions" style="padding:12px 24px;border:1px solid var(--border2);color:var(--text);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none" onmouseover="this.style.background='var(--panel2)'" onmouseout="this.style.background='transparent'">Spatial Functions</a>
+      <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedQueries.html" target="_blank" rel="noopener" style="padding:12px 24px;border:1px solid var(--border2);color:var(--dim);border-radius:6px;font-weight:700;font-size:13px;text-decoration:none">Official Reference ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- OVERVIEW -->
+<section class="section dark">
+  <div class="section-inner">
+    <div class="eyebrow">Overview</div>
+    <h2 class="section-h2">What This Guide <em>Covers</em></h2>
+    <p class="lead">The advanced SDA API extends plain SQL with macros, spatial functions, and service endpoints for areas of interest, interpretations, and reports.</p>
+    <div class="toc">
+      <a class="toc-link" href="#macros">§1 What Are Macros</a>
+      <a class="toc-link" href="#simple-macros">§2 Variable Macros</a>
+      <a class="toc-link" href="#table-macros">§3 Table Macros</a>
+      <a class="toc-link" href="#spatial-macros">§4 Spatial Macros</a>
+      <a class="toc-link" href="#aoi-macros">§5 AOI Creation Macros</a>
+      <a class="toc-link" href="#paoi">§6 Persistent AOI Types</a>
+      <a class="toc-link" href="#functions">§7 Tabular Spatial Functions</a>
+      <a class="toc-link" href="#interp">§8 Interpretations</a>
+      <a class="toc-link" href="#reports">§9 Reports</a>
+    </div>
+    <div class="card-grid">
+      <div class="card" style="border-left:3px solid var(--accent2)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:8px">Macros</div>
+        <h3>Shorthand Expansion</h3>
+        <p>Tilde-delimited statements that expand into DECLARE, table definitions, and multi-step spatial operations — making complex queries concise.</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--accent)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Persistent AOI</div>
+        <h3>Server-Side Areas of Interest</h3>
+        <p>Define an area once — from an SSA, a mukey list, a WKT polygon, a shapefile, or a GeoJSON — and reuse it across spatial clips, interpretation runs, and map renders.</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--soil)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soil);margin-bottom:8px">Spatial Functions</div>
+        <h3>WKT Intersection Queries</h3>
+        <p>Server-side functions return areasymbol, mukey, or geometry for any polygon sent as WKT — both WGS84 and Web Mercator projections supported.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §1 WHAT ARE MACROS -->
+<section id="macros" class="section darker">
+  <div class="section-inner">
+    <div class="ch-num">01</div>
+    <div class="eyebrow">§1 Macros</div>
+    <h2 class="section-h2">What Are <em>Macros</em>?</h2>
+    <p class="lead">A macro is a shorthand statement the SDA server expands into full T-SQL before execution. Every macro is surrounded by tilde characters with no embedded whitespace, and variable names are prefixed with <code>@</code>.</p>
+
+    <div class="lesson reveal" id="lesson-macro-syntax">
+      <div class="lesson-header" onclick="toggle('lesson-macro-syntax')">
+        <div class="lesson-num">1</div>
+        <div class="lesson-title">
+          <h3>Macro Syntax Rules</h3>
+          <p>The three rules that govern every macro statement</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-macro-syntax-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-macro-syntax-body">
+        <p>Macros follow three strict rules:</p>
+        <ol style="color:var(--dim);padding-left:1.4rem;line-height:2.2;margin-bottom:16px">
+          <li>Surrounded by tilde characters: <code>~MacroName(args)~</code></li>
+          <li>No embedded whitespace inside the tildes</li>
+          <li>Variable names prefixed with <code>@</code> — e.g., <code>@aoi</code>, <code>@aoiid</code></li>
+        </ol>
+        <div class="tip"><strong>Expansion example:</strong> <code>~DeclareGeometry(@aoi)~</code> expands to <code>DECLARE @aoi geometry;</code> — the server does the substitution before running your SQL.</div>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Minimal Macro Example</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:100px" readonly>-- Declare a varchar variable and assign a value
+~DeclareVarchar(@ssa,20)~
+select @ssa = 'WI025';
+select @ssa as [SurveyArea]</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §2 SIMPLE VARIABLE MACROS -->
+<section id="simple-macros" class="section dark">
+  <div class="section-inner">
+    <div class="ch-num">02</div>
+    <div class="eyebrow">§2 Variable Macros</div>
+    <h2 class="section-h2">Simple Variable <em>Macros</em></h2>
+    <p class="lead">These macros declare a single SQL variable of the specified type. They replace verbose <code>DECLARE @var type;</code> syntax with a one-liner.</p>
+
+    <div class="lesson reveal" id="lesson-numeric">
+      <div class="lesson-header" onclick="toggle('lesson-numeric')">
+        <div class="lesson-num">2</div>
+        <div class="lesson-title">
+          <h3>Numeric &amp; Date Types</h3>
+          <p>Integer, float, decimal, date, and time variable declarations</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-numeric-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-numeric-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Expands To</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>~DeclareBigint(@v)~</td><td><code>DECLARE @v bigint;</code></td><td>64-bit integer</td></tr>
+            <tr><td>~DeclareInt(@v)~</td><td><code>DECLARE @v int;</code></td><td>Most common integer</td></tr>
+            <tr><td>~DeclareSmallint(@v)~</td><td><code>DECLARE @v smallint;</code></td><td>-32768 to 32767</td></tr>
+            <tr><td>~DeclareTinyint(@v)~</td><td><code>DECLARE @v tinyint;</code></td><td>0 to 255</td></tr>
+            <tr><td>~DeclareFloat(@v)~</td><td><code>DECLARE @v float;</code></td><td>Double precision</td></tr>
+            <tr><td>~DeclareReal(@v)~</td><td><code>DECLARE @v real;</code></td><td>Single precision</td></tr>
+            <tr><td>~DeclareBit(@v)~</td><td><code>DECLARE @v bit;</code></td><td>Boolean 0/1</td></tr>
+            <tr><td>~DeclareDecimal(@v,p,s)~</td><td><code>DECLARE @v decimal(p,s);</code></td><td>Fixed precision &amp; scale</td></tr>
+            <tr><td>~DeclareNumeric(@v,p,s)~</td><td><code>DECLARE @v numeric(p,s);</code></td><td>Alias for decimal</td></tr>
+            <tr><td>~DeclareDate(@v)~</td><td><code>DECLARE @v date;</code></td><td>Date only</td></tr>
+            <tr><td>~DeclareDatetime(@v)~</td><td><code>DECLARE @v datetime;</code></td><td>Date + time</td></tr>
+            <tr><td>~DeclareTime(@v)~</td><td><code>DECLARE @v time;</code></td><td>Time only</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-string">
+      <div class="lesson-header" onclick="toggle('lesson-string')">
+        <div class="lesson-num">3</div>
+        <div class="lesson-title">
+          <h3>String &amp; Spatial Types</h3>
+          <p>Char, varchar, geometry, and geography variable declarations</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-string-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-string-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Expands To</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>~DeclareChar(@v,n)~</td><td><code>DECLARE @v char(n);</code></td><td>Fixed-length string</td></tr>
+            <tr><td>~DeclareVarchar(@v,n)~</td><td><code>DECLARE @v varchar(n);</code></td><td>Variable-length string</td></tr>
+            <tr><td>~DeclareVarchar(@v,max)~</td><td><code>DECLARE @v varchar(max);</code></td><td>Unlimited text</td></tr>
+            <tr><td>~DeclareGeometry(@v)~</td><td><code>DECLARE @v geometry;</code></td><td>Planar spatial — Web Mercator</td></tr>
+            <tr><td>~DeclareGeography(@v)~</td><td><code>DECLARE @v geography;</code></td><td>Geodetic — WGS84</td></tr>
+          </tbody>
+        </table>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">String + Geometry Declaration</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:130px" readonly>~DeclareChar(@a,3)~
+~DeclareVarchar(@b,4)~
+~DeclareVarchar(@c,max)~
+~DeclareDecimal(@d,5,2)~
+~DeclareGeometry(@aoi)~
+
+select @a = 'WI0', @b = '025', @c = 'Dane County, WI', @d = 3.14;
+select @a+@b as areasymbol, @c as description, @d as pi_approx</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §3 TABLE VARIABLE MACROS -->
+<section id="table-macros" class="section darker">
+  <div class="section-inner">
+    <div class="ch-num">03</div>
+    <div class="eyebrow">§3 Table Variable Macros</div>
+    <h2 class="section-h2">Table Variable <em>Macros</em></h2>
+    <p class="lead">These macros declare an in-memory table variable with a predefined schema — essential for passing mukey lists into spatial functions and accumulating geometry results.</p>
+
+    <div class="lesson reveal" id="lesson-tablevars">
+      <div class="lesson-header" onclick="toggle('lesson-tablevars')">
+        <div class="lesson-num">4</div>
+        <div class="lesson-title">
+          <h3>Simple Table Variables</h3>
+          <p>Integer and varchar table variables for passing lists to spatial functions</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-tablevars-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-tablevars-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Schema Created</th></tr></thead>
+          <tbody>
+            <tr><td>~DeclareIntTable(@t)~</td><td>Single column: <code>i int</code></td></tr>
+            <tr><td>~DeclareVarchar255Table(@t)~</td><td>Single column: <code>s varchar(255)</code></td></tr>
+          </tbody>
+        </table>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Build a mukey list and pass to pAOI</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:160px" readonly>-- Collect farmland-of-statewide-importance mukeys from ND053
+~DeclareIntTable(@mukeyList)~
+insert into @mukeyList
+select mu.mukey
+from legend L
+left join mapunit MU on L.lkey = MU.lkey
+where L.areatypename = 'Non-MLRA Soil Survey Area'
+  and L.areasymbol = 'ND053'
+  and mu.farmlndcl = 'Farmland of statewide importance';
+
+-- Create pAOI from the list
+~CreateAoiFromMukeyList(@mukeyList,@aoiid,@message)~
+select count(*) [MukeyCount] from SDA_Get_AoiMapunit_By_AoiId(@aoiid);
+select @aoiid [aoiid], @message [message]</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-geomtables">
+      <div class="lesson-header" onclick="toggle('lesson-geomtables')">
+        <div class="lesson-num">5</div>
+        <div class="lesson-title">
+          <h3>Geometry &amp; Geography Table Variables</h3>
+          <p>Two-column tables pairing an ID or string key with a spatial geometry/geography column</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-geomtables-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-geomtables-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Schema: (col1, col2)</th></tr></thead>
+          <tbody>
+            <tr><td>~DeclareIdGeomTable(@t)~</td><td><code>id int, geom geometry</code></td></tr>
+            <tr><td>~DeclareIdGeogTable(@t)~</td><td><code>id int, geog geography</code></td></tr>
+            <tr><td>~DeclareVarchar255GeomTable(@t)~</td><td><code>s varchar(255), geom geometry</code></td></tr>
+            <tr><td>~DeclareVarchar255GeogTable(@t)~</td><td><code>s varchar(255), geog geography</code></td></tr>
+          </tbody>
+        </table>
+        <div class="note"><strong>Pattern:</strong> <code>~DeclareIdGeomTable(@intersected)~</code> is the input container for <code>~GetClippedMapunits(...)~</code>. Then <code>~DeclareIdGeogTable(@areas)~</code> holds the converted geodetic result for <code>STArea()</code> calculations.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §4 SPATIAL MACROS -->
+<section id="spatial-macros" class="section dark">
+  <div class="section-inner">
+    <div class="ch-num">04</div>
+    <div class="eyebrow">§4 Spatial Macros</div>
+    <h2 class="section-h2">Clipping &amp; Geometry <em>Macros</em></h2>
+    <p class="lead">These macros perform the heavy spatial work — clipping soil polygons to your AOI, converting between geometry and geography, and splitting multi-part geometries.</p>
+
+    <div class="lesson reveal" id="lesson-clipping">
+      <div class="lesson-header" onclick="toggle('lesson-clipping')">
+        <div class="lesson-num">6</div>
+        <div class="lesson-title">
+          <h3>GetClippedMapunits &amp; Geometry Conversion</h3>
+          <p>Clip soil polygons to a WKT boundary and compute area in square meters</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-clipping-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-clipping-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>~GetClippedMapunits(@aoi,polygon,geo,@out)~</td><td>Clip mupolygon to @aoi; put results in @out (id=mukey, geom=clipped geometry, WGS84)</td></tr>
+            <tr><td>~GetClippedMapunits(@aoi,polygon,proj,@out)~</td><td>Same, but in Web Mercator projection</td></tr>
+            <tr><td>~GetGeogFromGeomWgs84(@in,@out)~</td><td>Convert geometry table (WGS84) → geography table for <code>STArea()</code> in m²</td></tr>
+            <tr><td>~SplitIdGeomTable(@in,@out)~</td><td>Split multi-part geometries into individual rows</td></tr>
+          </tbody>
+        </table>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Clip + Area Calculation (Full Pattern)</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+            <button class="btn-run">▶ Run on SDA</button>
+          </div>
+          <textarea class="sql-editor" style="height:300px">~DeclareGeometry(@aoi)~
+select @aoi = geometry::STPolyFromText('polygon((
+  -89.573 43.073,-89.573 43.093,
+  -89.540 43.093,-89.540 43.073,-89.573 43.073
+))', 4326)
+
+-- Step 1: clip soil map units to the AOI boundary
+~DeclareIdGeomTable(@intersectedPolygonGeometries)~
+~GetClippedMapunits(@aoi,polygon,geo,@intersectedPolygonGeometries)~
+
+-- Step 2: convert planar geometry → geodetic geography for real area
+~DeclareIdGeogTable(@intersectedPolygonGeographies)~
+~GetGeogFromGeomWgs84(@intersectedPolygonGeometries,@intersectedPolygonGeographies)~
+
+-- Step 3: aggregate clipped area by mukey
+select
+  id             as mukey,
+  sum(geog.STArea()) * 0.000247105 as acres_clipped
+into #aggarea
+from @intersectedPolygonGeographies
+group by id;
+
+-- Step 4: join back to tabular data
+select
+  M.mukey, A.acres_clipped,
+  M.musym, M.muname,
+  L.areasymbol
+from #aggarea A
+join mapunit M on M.mukey = A.mukey
+join legend  L on L.lkey  = M.lkey
+order by A.acres_clipped desc</textarea>
+          <div class="sql-result"></div>
+        </div>
+        <div class="tip"><strong>Unit note:</strong> <code>STArea()</code> returns square meters. Multiply by <code>0.000247105</code> to get acres.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §5 AOI CREATION MACROS -->
+<section id="aoi-macros" class="section darker">
+  <div class="section-inner">
+    <div class="ch-num">05</div>
+    <div class="eyebrow">§5 AOI Creation Macros</div>
+    <h2 class="section-h2">Persistent AOI <em>Creation</em></h2>
+    <p class="lead">Three macros create a persistent area of interest server-side and return an <code>@aoiid</code> integer you reuse in all subsequent queries, interpretation runs, and report requests.</p>
+
+    <div class="lesson reveal" id="lesson-aoi-create">
+      <div class="lesson-header" onclick="toggle('lesson-aoi-create')">
+        <div class="lesson-num">7</div>
+        <div class="lesson-title">
+          <h3>Three AOI Creation Patterns</h3>
+          <p>From a survey area symbol, a mukey list, or an existing WSS AOI</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-aoi-create-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-aoi-create-body">
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Creates pAOI From</th></tr></thead>
+          <tbody>
+            <tr><td>~CreateAoiFromSsa(@ssa,@aoiid,@message)~</td><td>A soil survey area areasymbol (e.g. <code>'CA795'</code>)</td></tr>
+            <tr><td>~CreateAoiFromMukeyList(@mukeyList,@aoiid,@message)~</td><td>A <code>~DeclareIntTable~</code> populated with mukeys</td></tr>
+            <tr><td>~CreateAoiFromWssAoi(@wAoiId,@pAoiId,@message)~</td><td>An existing Web Soil Survey transient AOI ID</td></tr>
+          </tbody>
+        </table>
+
+        <h4 style="color:#fff;margin:20px 0 8px">SSA-based pAOI</h4>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Create pAOI from Survey Area</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:100px" readonly>~DeclareVarchar(@ssa,20)~
+select @ssa = 'CA795';
+~CreateAoiFromSsa(@ssa,@aoiid,@message)~
+select @aoiid [aoiid], @message [message]</textarea>
+        </div>
+
+        <h4 style="color:#fff;margin:20px 0 8px">WSS AOI Import</h4>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Import from Web Soil Survey AOI</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:90px" readonly>~DeclareInt(@wAoiId)~
+select @wAoiId = 25731;
+~CreateAoiFromWssAoi(@wAoiId,@pAoiId,@message)~
+select @pAoiId as pAoiId, @message as message</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §6 PERSISTENT AOI TYPES -->
+<section id="paoi" class="section dark">
+  <div class="section-inner">
+    <div class="ch-num">06</div>
+    <div class="eyebrow">§6 Persistent AOI</div>
+    <h2 class="section-h2">Four pAOI <em>Types</em></h2>
+    <p class="lead">A persistent Area of Interest lives on the SDA server and is referenced by its numeric <code>aoiid</code>. Four creation methods cover every use case — from a simple survey area to a GeoJSON FeatureCollection with filter expressions.</p>
+
+    <div class="lesson reveal" id="lesson-paoi-types">
+      <div class="lesson-header" onclick="toggle('lesson-paoi-types')">
+        <div class="lesson-num">8</div>
+        <div class="lesson-title">
+          <h3>pAOI Creation via Web Service</h3>
+          <p>REST endpoint patterns for all four pAOI types</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-paoi-types-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-paoi-types-body">
+
+        <h4 style="color:var(--accent);margin-bottom:8px">Type 1 — Survey Area (SSA)</h4>
+        <div class="ep">service=aoi&amp;request=create&amp;ssa=CA795</div>
+
+        <h4 style="color:var(--accent);margin:16px 0 8px">Type 2 — Mukey List</h4>
+        <div class="ep">service=aoi&amp;request=create&amp;mukeylist=1860695,1860696,1860697</div>
+
+        <h4 style="color:var(--accent);margin:16px 0 8px">Type 3a — WKT Polygon (WGS84)</h4>
+        <div class="ep">service=aoi&amp;request=create&amp;aoicoords=polygon((-89.573 43.073,...,-89.573 43.073))</div>
+        <div class="note" style="margin-top:8px"><strong>Coordinate system:</strong> WKT coords are assumed WGS84 (EPSG:4326). Multi-polygon is also supported.</div>
+
+        <h4 style="color:var(--accent);margin:16px 0 8px">Type 3b — GeoJSON</h4>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">GeoJSON FeatureCollection with part names</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:160px" readonly>// POST to: service=aoi&request=create
+// Body parameter: aoicoords=<GeoJSON below>
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {"type":"Polygon","coordinates":[[...]]},
+      "properties": {"partName": "North Field"}
+    },
+    {
+      "type": "Feature",
+      "geometry": {"type":"Polygon","coordinates":[[...]]},
+      "properties": {"partName": "South Field"}
+    }
+  ]
+}</textarea>
+        </div>
+        <p style="margin-top:8px">GeoJSON supports a <code>filter</code> parameter (SQL WHERE clause) and a <code>partname</code> template like <code>[PLU Number],[Id];{0} ({1})</code> for composing part labels from feature properties.</p>
+
+        <h4 style="color:var(--accent);margin:16px 0 8px">Type 4 — WSS AOI Import</h4>
+        <div class="ep">service=aoi&amp;request=create&amp;wssaoi=12345</div>
+
+        <h4 style="color:#fff;margin:24px 0 8px">Querying a pAOI</h4>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Retrieve map units for a pAOI</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:80px" readonly>-- Replace 502 with the aoiid returned from the creation call
+select * from SDA_Get_AoiMapunit_By_AoiId(502);
+select * from SDA_Get_Aoi_By_AoiId(502);</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-paoi-functions">
+      <div class="lesson-header" onclick="toggle('lesson-paoi-functions')">
+        <div class="lesson-num">9</div>
+        <div class="lesson-title">
+          <h3>pAOI Query Functions</h3>
+          <p>All server-side functions available once you have an aoiid</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-paoi-functions-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-paoi-functions-body">
+        <table class="fn-table">
+          <thead><tr><th>Function</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td>SDA_Get_Aoi_By_AoiId(@id)</td><td>AOI metadata: acres, creation method, multipart flag, geometry</td></tr>
+            <tr><td>SDA_Get_AoiMapunit_By_AoiId(@id)</td><td>AoiId, AoiMapunitId, MapUnitKey</td></tr>
+            <tr><td>SDA_Get_AoiPart_By_AoiId(@id)</td><td>Part-level metadata: name, acreage, geometry (aoicoords pAOIs only)</td></tr>
+            <tr><td>SDA_Get_AoiSoilMapunitPolygon_By_AoiId(@id)</td><td>Clipped polygon geometries per map unit</td></tr>
+            <tr><td>SDA_Get_AoiSoilMapunitLine_By_AoiId(@id)</td><td>Clipped line geometries</td></tr>
+            <tr><td>SDA_Get_AoiSoilMapunitPoint_By_AoiId(@id)</td><td>Point features</td></tr>
+            <tr><td>SDA_Get_AoiSoilThematicMap_By_AoiId(@id)</td><td>Interpretation thematic maps stored with this AOI</td></tr>
+            <tr><td>SDA_Get_AoiSoilThematicMapRating_By_AoiId(@id)</td><td>Per-mukey ratings with color strings</td></tr>
+            <tr><td>SDA_Get_AoiSld_By_AoiId(@id)</td><td>Styled Layer Descriptor XML for WMS rendering</td></tr>
+          </tbody>
+        </table>
+        <div class="tip"><strong>Part-level queries:</strong> Append <code>_And_AoiPartId(@id, @partId)</code> to any function name to filter results to a single part of a multipart AOI.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §7 TABULAR SPATIAL FUNCTIONS -->
+<section id="functions" class="section darker">
+  <div class="section-inner">
+    <div class="ch-num">07</div>
+    <div class="eyebrow">§7 Tabular Spatial Functions</div>
+    <h2 class="section-h2">WKT Intersection <em>Functions</em></h2>
+    <p class="lead">These server-side table-valued functions accept a WKT polygon and return areasymbol, mukey, or geometry — no macro required. Available in both WGS84 (<code>WktWgs84</code>) and Web Mercator (<code>WktWm</code>) flavors.</p>
+
+    <div class="lesson reveal" id="lesson-fn-areasymbol">
+      <div class="lesson-header" onclick="toggle('lesson-fn-areasymbol')">
+        <div class="lesson-num">10</div>
+        <div class="lesson-title">
+          <h3>Areasymbol &amp; Mukey Functions</h3>
+          <p>Identify which survey areas and map units overlap a polygon</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-fn-areasymbol-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-fn-areasymbol-body">
+        <table class="fn-table">
+          <thead><tr><th>Function</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td>SDA_Get_Areasymbol_from_intersection_with_WktWgs84(wkt)</td><td>areasymbol of overlapping survey areas</td></tr>
+            <tr><td>SDA_Get_Areasymbol_from_intersection_with_WktWm(wkt)</td><td>Same, Web Mercator coordinates</td></tr>
+            <tr><td>SDA_Get_Mukey_from_intersection_with_WktWgs84(wkt)</td><td>mukey of overlapping map units</td></tr>
+            <tr><td>SDA_Get_Mukey_from_intersection_with_WktWm(wkt)</td><td>Same, Web Mercator</td></tr>
+            <tr><td>SDA_Get_AreasymbolWKTWgs84_from_Areasymbol(ssa)</td><td>Boundary WKT of a survey area in WGS84</td></tr>
+            <tr><td>SDA_Get_MupolygonWktWgs84_from_Mukey(mukey)</td><td>Polygon WKT for a specific mukey</td></tr>
+            <tr><td>SDA_Get_MupolygonWktWgs84_from_MukeyTable(@table)</td><td>Polygons for a list of mukeys</td></tr>
+          </tbody>
+        </table>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Find survey areas intersecting a polygon</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+            <button class="btn-run">▶ Run on SDA</button>
+          </div>
+          <textarea class="sql-editor" style="height:110px">select * from SDA_Get_Areasymbol_from_intersection_with_WktWgs84(
+  'polygon((-89.573 43.073,-89.573 43.093,
+            -89.540 43.093,-89.540 43.073,-89.573 43.073))')</textarea>
+          <div class="sql-result"></div>
+        </div>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Find mukeys + tabular data for an AOI polygon</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+            <button class="btn-run">▶ Run on SDA</button>
+          </div>
+          <textarea class="sql-editor" style="height:140px">select S.mukey, M.musym, M.muname, L.areasymbol
+from SDA_Get_Mukey_from_intersection_with_WktWgs84(
+  'polygon((-89.573 43.073,-89.573 43.093,
+            -89.540 43.093,-89.540 43.073,-89.573 43.073))'
+) as S
+join mapunit M on M.mukey = S.mukey
+join legend  L on L.lkey  = M.lkey
+order by M.musym</textarea>
+          <div class="sql-result"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-fn-geometry">
+      <div class="lesson-header" onclick="toggle('lesson-fn-geometry')">
+        <div class="lesson-num">11</div>
+        <div class="lesson-title">
+          <h3>Polygon, Line &amp; Point Geometry Functions</h3>
+          <p>Return actual geometry WKT for map unit polygons, lines, and points</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-fn-geometry-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-fn-geometry-body">
+        <table class="fn-table">
+          <thead><tr><th>Function</th><th>Geometry Type</th></tr></thead>
+          <tbody>
+            <tr><td>SDA_Get_MupolygonWktWgs84_from_Mukey(mukey)</td><td>Polygon — single mukey</td></tr>
+            <tr><td>SDA_Get_MupolygonWktWm_from_Mukey(mukey)</td><td>Polygon — single mukey, Web Mercator</td></tr>
+            <tr><td>SDA_Get_MupolygonWktWgs84_from_MukeyTable(@t)</td><td>Polygon — list of mukeys</td></tr>
+            <tr><td>SDA_Get_MupointWktWgs84_from_Mukey(mukey)</td><td>Miscellaneous area points</td></tr>
+            <tr><td>SDA_Get_MupointWktWgs84_from_MukeyTable(@t)</td><td>Points — list of mukeys</td></tr>
+            <tr><td>SDA_Get_MulineWktWgs84_from_Mukey(mukey)</td><td>Linear features</td></tr>
+            <tr><td>SDA_Get_MulineWktWgs84_from_MukeyTable(@t)</td><td>Lines — list of mukeys</td></tr>
+            <tr><td>SDA_Get_Sapolygonkey_from_intersection_with_WktWgs84(wkt)</td><td>Survey area polygon key</td></tr>
+            <tr><td>SDA_Get_Mupolygonkey_from_intersection_with_WktWgs84(wkt)</td><td>Map unit polygon key</td></tr>
+            <tr><td>SDA_Get_Featlinekey_from_intersection_with_WktWgs84(wkt)</td><td>Feature line key</td></tr>
+            <tr><td>SDA_Get_Featpointkey_from_intersection_with_WktWgs84(wkt)</td><td>Feature point key</td></tr>
+          </tbody>
+        </table>
+        <div class="note"><strong>Naming pattern:</strong> All functions follow <code>SDA_Get_[Object]Wkt[Proj]_from_[Input](arg)</code>. Swap <code>Wgs84</code>↔<code>Wm</code> to switch coordinate systems. Append <code>Table</code> to the source name to accept a table variable instead of a scalar.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §8 INTERPRETATIONS -->
+<section id="interp" class="section dark">
+  <div class="section-inner">
+    <div class="ch-num">08</div>
+    <div class="eyebrow">§8 Interpretations</div>
+    <h2 class="section-h2">Running <em>Interpretations</em></h2>
+    <p class="lead">Interpretations are derived ratings — computed from soil properties by predefined rules. You request a catalog of available interpretations, configure rule parameters, and receive an <code>interpresultid</code> linking results back to your pAOI.</p>
+
+    <div class="lesson reveal" id="lesson-interp-catalog">
+      <div class="lesson-header" onclick="toggle('lesson-interp-catalog')">
+        <div class="lesson-num">12</div>
+        <div class="lesson-title">
+          <h3>Interpretation Catalog &amp; Use Categories</h3>
+          <p>Discover which interpretations are available for your AOI</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-interp-catalog-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-interp-catalog-body">
+        <div class="ep">service=interpretation&amp;request=getusecategories</div>
+        <table class="fn-table" style="margin-top:12px">
+          <thead><tr><th>usecategoryid</th><th>Category</th></tr></thead>
+          <tbody>
+            <tr><td>0</td><td>All Uses</td></tr>
+            <tr><td>4</td><td>Cropland</td></tr>
+            <tr><td>6</td><td>Forestland</td></tr>
+            <tr><td>7</td><td>Horticulture</td></tr>
+            <tr><td>9</td><td>Hayland / Pastureland</td></tr>
+            <tr><td>10</td><td>Rangeland</td></tr>
+            <tr><td>11</td><td>Recreation</td></tr>
+            <tr><td>16</td><td>Urban Uses</td></tr>
+          </tbody>
+        </table>
+        <div class="ep" style="margin-top:12px">service=interpretation&amp;request=getcatalog&amp;aoiid=502&amp;usecategoryid=16</div>
+        <p>The response JSON lists folders and <code>attributekey</code> values for every interpretation in the selected category. Pass an <code>attributekey</code> to <code>getruledata</code> to see configurable parameters.</p>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-interp-run">
+      <div class="lesson-header" onclick="toggle('lesson-interp-run')">
+        <div class="lesson-num">13</div>
+        <div class="lesson-title">
+          <h3>Running an Interpretation</h3>
+          <p>Configure rule parameters and receive a result ID for thematic mapping</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-interp-run-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-interp-run-body">
+        <h4 style="color:#fff;margin-bottom:8px">1 — Get rule defaults</h4>
+        <div class="ep">service=interpretation&amp;request=getruledata&amp;aoiid=502&amp;attributekey=98</div>
+
+        <h4 style="color:#fff;margin:16px 0 8px">2 — Run with shortformdata</h4>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Run Calcium Carbonate interpretation</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:130px" readonly>// POST body: service=interpretation&request=getrating&shortformdata=
+{
+  "ComponentPercentCutoff": "",
+  "aoiid": "502",
+  "ruleid": "98",
+  "AggregationMethod": "Dominant Component",
+  "TiebreakRule": "1",
+  "InterpretNullsAsZero": "True",
+  "HorizonAggregationMethod": "All Layers"
+}</textarea>
+        </div>
+        <p>Response: <code>{"interpresultid": "504"}</code> — use this ID to query <code>SDA_Get_AoiSoilThematicMapRating_By_AoiId</code> for per-mukey ratings and colors.</p>
+
+        <h4 style="color:#fff;margin:16px 0 8px">Simplified (default parameters)</h4>
+        <div class="ep">service=interpretation&amp;request=getrating&amp;aoiid=502&amp;attributekey=98</div>
+      </div>
+    </div>
+
+    <div class="lesson reveal" id="lesson-adhoc">
+      <div class="lesson-header" onclick="toggle('lesson-adhoc')">
+        <div class="lesson-num">14</div>
+        <div class="lesson-title">
+          <h3>Ad-Hoc Interpretations</h3>
+          <p>Upload your own ratings table to attach a custom thematic map to a pAOI</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-adhoc-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-adhoc-body">
+        <p>When predefined rules don't fit your use case, populate a custom rating table and load it as an ad-hoc interpretation:</p>
+        <table class="fn-table">
+          <thead><tr><th>Macro</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>~DeclareAdHocRatingTable(@t)~</td><td>Declares table: (MapUnitKey int, MapUnitRatingString varchar(255), MapUnitRatingNumeric numeric(17,6), RgbString varchar(11))</td></tr>
+            <tr><td>~DeclareAdHocLegendTable(@t)~</td><td>Declares table: (sequence int, LegendText varchar(255), RgbString varchar(11))</td></tr>
+            <tr><td>~LoadAdHocInterpretation(@pAoiId,@ratings,@interpresultid,@msg)~</td><td>Loads ratings (no legend)</td></tr>
+            <tr><td>~LoadAdHocInterpretation(@pAoiId,@ratings,@legend,@interpresultid,@msg)~</td><td>Loads ratings + custom legend</td></tr>
+          </tbody>
+        </table>
+        <div class="sql-panel">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Ad-Hoc Interpretation — Full Example</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:200px" readonly>~DeclareInt(@aoiid)~
+select @aoiid = 502;
+
+~DeclareAdHocRatingTable(@ratingTable)~
+insert into @ratingTable(MapUnitKey,MapUnitRatingString,MapUnitRatingNumeric,RgbString)
+values
+  (1860695, 'High Productivity',    0.82, '34 139 34'),
+  (1860696, 'Medium Productivity',  0.55, '255 165  0'),
+  (1860697, 'Low Productivity',     0.21, '178  34 34');
+
+~DeclareAdHocLegendTable(@legendTable)~
+insert into @legendTable(sequence,LegendText,RgbString)
+values
+  (1,'High Productivity',  '34 139 34'),
+  (2,'Medium Productivity','255 165  0'),
+  (3,'Low Productivity',   '178  34 34');
+
+~LoadAdHocInterpretation(@aoiid,@ratingTable,@legendTable,@interpresultid,@message)~
+select @interpresultid [interpresultid], @message [message]</textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- §9 REPORTS -->
+<section id="reports" class="section darker">
+  <div class="section-inner">
+    <div class="ch-num">09</div>
+    <div class="eyebrow">§9 Reports</div>
+    <h2 class="section-h2">Generating <em>Reports</em></h2>
+    <p class="lead">Reports produce DocBook XML documents matching Web Soil Survey's catalog. Results are returned immediately — not persisted — so the calling application is responsible for transforming the XML to a presentation format.</p>
+
+    <div class="lesson reveal" id="lesson-reports">
+      <div class="lesson-header" onclick="toggle('lesson-reports')">
+        <div class="lesson-num">15</div>
+        <div class="lesson-title">
+          <h3>Report Service Endpoints</h3>
+          <p>Catalog, describe, configure, and run soil reports for a pAOI</p>
+        </div>
+        <span class="lesson-tag tag-advanced">Advanced</span>
+        <span class="lesson-expand" id="lesson-reports-arrow">▼</span>
+      </div>
+      <div class="lesson-body" id="lesson-reports-body">
+        <table class="fn-table">
+          <thead><tr><th>Request Pattern</th><th>Returns</th></tr></thead>
+          <tbody>
+            <tr><td><code>service=report&amp;request=getusecategories</code></td><td>JSON list of use category IDs and names</td></tr>
+            <tr><td><code>service=report&amp;request=getcatalog&amp;aoiid=N</code></td><td>JSON folder tree of report names and IDs</td></tr>
+            <tr><td><code>service=report&amp;request=getdescription&amp;reportid=N</code></td><td>DocBook XML description of the report</td></tr>
+            <tr><td><code>service=report&amp;request=getreportdata&amp;aoiid=N&amp;reportid=N</code></td><td>JSON shortformdata template with defaults</td></tr>
+            <tr><td><code>service=report&amp;request=getreport&amp;shortformdata={...}</code></td><td>DocBook XML report for the configured parameters</td></tr>
+            <tr><td><code>service=report&amp;request=getreport&amp;aoiid=N&amp;reportid=N</code></td><td>Report with all default parameters</td></tr>
+          </tbody>
+        </table>
+
+        <h4 style="color:#fff;margin:16px 0 8px">Common Report IDs</h4>
+        <table class="fn-table">
+          <thead><tr><th>reportid</th><th>Report Name</th></tr></thead>
+          <tbody>
+            <tr><td>461</td><td>Component Description (Nontechnical)</td></tr>
+            <tr><td>17</td><td>Dwellings and Small Commercial Buildings</td></tr>
+            <tr><td>33</td><td>Taxonomic Classification of the Soils</td></tr>
+            <tr><td>119</td><td>Map Unit Description (Brief, Generated)</td></tr>
+            <tr><td>6</td><td>Irrigated and Nonirrigated Yields by Map Unit Component</td></tr>
+          </tbody>
+        </table>
+
+        <div class="sql-panel" style="margin-top:16px">
+          <div class="sql-toolbar">
+            <span class="sql-toolbar-label">Run a Taxonomic Classification Report</span>
+            <button class="btn-copy" onclick="copySQL(this)">Copy</button>
+          </div>
+          <textarea class="sql-editor" style="height:110px" readonly>// Simplified form — uses all defaults:
+// GET https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest
+// service=report&request=getreport&aoiid=5940&reportid=33
+
+// Configured form (shortformdata):
+{
+  "aoiid": "5940",
+  "reportid": "33",
+  "reportname": "Taxonomic Classification of the Soils",
+  "Includeminorsoils": "false",
+  "Displaynationalmapunitsymbols": "false"
+}</textarea>
+        </div>
+        <div class="warn"><strong>Known defect:</strong> Report ID 39 (Selected Soil Interpretations) returns an HTML error when called via the short format data pathway. Use the simplified endpoint for this report.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- REFERENCE LINKS -->
+<section class="section dark">
+  <div class="section-inner">
+    <div class="eyebrow">Reference</div>
+    <h2 class="section-h2">Official <em>Documentation</em></h2>
+    <p class="lead">Primary sources from the USDA NRCS Soil Data Access team.</p>
+    <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+      <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedQueries.html" target="_blank" rel="noopener" class="card" style="text-decoration:none;border-left:3px solid var(--accent2)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent2);margin-bottom:8px">Primary Reference</div>
+        <h3>Advanced Queries</h3>
+        <p>Official SDA macros, pAOI, interpretations, and reports documentation. Source for all content on this page.</p>
+        <span style="font-size:11px;color:var(--accent2)">sdmdataaccess.nrcs.usda.gov ↗</span>
+      </a>
+      <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedSpatialDataAccess.pdf" target="_blank" rel="noopener" class="card" style="text-decoration:none;border-left:3px solid var(--soil)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--soil);margin-bottom:8px">PDF Guide</div>
+        <h3>Advanced Spatial Data Access</h3>
+        <p>Detailed walkthrough of spatial functions, WKT patterns, AOI creation, and projection handling.</p>
+        <span style="font-size:11px;color:var(--soil)">Download PDF ↗</span>
+      </a>
+      <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank" rel="noopener" class="card" style="text-decoration:none;border-left:3px solid var(--green)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:8px">Live Interface</div>
+        <h3>SDA Query Interface</h3>
+        <p>The only place to run multi-step macro queries that use temp tables and session state — required for pAOI-based workflows.</p>
+        <span style="font-size:11px;color:var(--green)">Open SDA ↗</span>
+      </a>
+      <a href="query-runner.html" class="card" style="text-decoration:none;border-left:3px solid var(--accent)">
+        <div style="font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:8px">This Site</div>
+        <h3>Query Lab</h3>
+        <p>Run simple (single-SELECT, no macro) SDA queries directly in the browser with live results and CSV export.</p>
+        <span style="font-size:11px;color:var(--accent)">Open Query Lab →</span>
+      </a>
+    </div>
+    <div class="note" style="margin-top:24px">
+      <strong>Note on macros &amp; temp tables:</strong> Macro queries and multi-step pAOI workflows use SQL Server session state and cannot run through a stateless REST call. Use the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> or the SSMS-connected <code>sdmOnline</code> database for these queries. Single <code>SELECT</code> queries run fine in the Query Lab above.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Soil Data Access Training Resources · USDA NRCS SSURGO · Built with real soil data</p>
+  <p style="margin-top:8px">
+    <a href="https://sdmdataaccess.nrcs.usda.gov/QueryHelp.aspx" target="_blank">SDA QueryHelp</a> ·
+    <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA Query Interface</a> ·
+    <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedQueries.html" target="_blank">Advanced Queries Reference</a> ·
+    <a href="https://jneme910.github.io/NRCS-Soil-Data-Access/" target="_blank">Soil Intelligence</a> ·
+    <a href="https://github.com/jneme910/Soil-Data-Access-Training-Resources" target="_blank">GitHub</a>
+  </p>
+</footer>
+
+<script>
+/* Lesson toggle */
+function toggle(id){
+  const body=document.getElementById(id+'-body');
+  const arrow=document.getElementById(id+'-arrow');
+  const open=body.classList.toggle('open');
+  arrow.textContent=open?'▲':'▼';
+}
+
+/* Copy SQL */
+function copySQL(btn){
+  const ta=btn.closest('.sql-panel').querySelector('textarea');
+  navigator.clipboard.writeText(ta.value);
+  btn.textContent='Copied!';
+  setTimeout(()=>btn.textContent='Copy',1500);
+}
+
+/* SDA runner — identical to other pages */
+const SDA='https://sdmdataaccess.sc.egov.usda.gov/Tabular/post.rest';
+document.querySelectorAll('.btn-run').forEach(btn=>{
+  btn.addEventListener('click',async()=>{
+    const panel=btn.closest('.sql-panel');
+    const sql=panel.querySelector('textarea').value.trim();
+    const res=panel.querySelector('.sql-result');
+    if(!sql)return;
+    btn.disabled=true;btn.textContent='⟳ Running…';
+    res.innerHTML='<div class="result-loading"><span class="spin">⟳</span> Querying SDA…</div>';
+    try{
+      const r=await fetch(SDA,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`query=${encodeURIComponent(sql)}&format=JSON%2BCOLUMNNAME`});
+      const text=await r.text();
+      let data;
+      try{data=JSON.parse(text);}
+      catch{
+        const msg=(text.match(/<Message>([\s\S]*?)<\/Message>/i)||[])[1]||'SDA returned a non-JSON response';
+        res.innerHTML=`<div class="result-err">✗ ${msg.trim()}<br><small>Complex macro queries require the <a href="https://sdmdataaccess.nrcs.usda.gov/Query.aspx" target="_blank">SDA query interface</a>.</small></div>`;
+        return;
+      }
+      if(!data.Table||data.Table.length<2){
+        res.innerHTML='<div class="result-ok">✓ Query executed — 0 rows returned</div>';return;
+      }
+      const[headers,,...rows]=data.Table;
+      const head=headers.map(h=>`<th>${h||''}</th>`).join('');
+      const body=rows.slice(0,150).map(r=>`<tr>${r.map(c=>`<td>${c!=null?c:'—'}</td>`).join('')}</tr>`).join('');
+      res.innerHTML=`<div class="result-ok">✓ ${rows.length} row${rows.length!==1?'s':''}</div>
+        <div style="overflow:auto;max-height:260px"><table class="result-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    }catch(e){
+      res.innerHTML=`<div class="result-err">✗ ${e.message}</div>`;
+    }finally{btn.disabled=false;btn.textContent='▶ Run on SDA';}
+  });
+});
+
+/* Scroll reveal */
+const io=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('on')}),{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+
+<script src="assets/sda-runner.js"></script>
+</body>
+</html>
