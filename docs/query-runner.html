@@ -267,18 +267,22 @@ btn.addEventListener('click', async () => {
   ra.innerHTML = '<div id="result-status" class="st-wait"><span class="spin">⟳</span> Connecting to SDA API…</div>';
 
   try {
-    const body = new URLSearchParams({ query: sql, format: 'JSON+COLUMNNAME' });
+    const body = new URLSearchParams({ query: sql, format: 'JSON' });
     const resp = await fetch(SDA, { method: 'POST', body });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+    if (!resp.ok) {
+      let msg = `HTTP ${resp.status}`;
+      try { const t = await resp.text(); if (t) msg += ` — ${t.slice(0, 300)}`; } catch {}
+      throw new Error(msg);
+    }
     const data = await resp.json();
     btn.disabled = false;
     btn.innerHTML = '▶ Run Query';
 
-    if (!data.Table || data.Table.length < 2) {
+    if (!data.Table || data.Table.length < 1) {
       ra.innerHTML = '<div id="result-status" class="st-ok">✓ Query executed — 0 rows returned</div>';
       return;
     }
-    const [headers, , ...rows] = data.Table;
+    const [headers, ...rows] = data.Table;
     ra.innerHTML = `
       <div id="result-status" class="st-ok">✓ ${rows.length.toLocaleString()} row${rows.length!==1?'s':''} returned</div>
       <div id="result-table-wrap">
