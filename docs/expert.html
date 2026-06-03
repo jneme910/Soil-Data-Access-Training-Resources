@@ -332,7 +332,13 @@ FROM lab_combine_nasis_ncss lcnn
 INNER JOIN lab_pedon lp
        ON lp.pedon_key = lcnn.pedon_key
 INNER JOIN lab_layer ll
-       ON ll.pedon_key = lcnn.pedon_key AND ll.hzn_top = 0
+       ON ll.pedon_key = lcnn.pedon_key
+      AND ll.hzn_top = (
+        SELECT MIN(ll2.hzn_top)
+        FROM lab_layer ll2
+        WHERE ll2.pedon_key = lcnn.pedon_key
+          AND (ll2.hzn_desgn IS NULL OR ll2.hzn_desgn NOT LIKE 'O%')
+      )
 INNER JOIN lab_chemical_properties lcp
        ON lcp.labsampnum = ll.labsampnum
 INNER JOIN lab_area la_st
@@ -423,9 +429,18 @@ SELECT TOP 30
 FROM legend l
 INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
 INNER JOIN component  c ON c.mukey  = mu.mukey AND c.majcompflag = 'Yes'
-INNER JOIN chorizon  ch ON ch.cokey = c.cokey  AND ch.hzdept_r   = 0
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey
 INNER JOIN chtexturegrp tg ON tg.chkey = ch.chkey AND tg.rvindicator = 'Yes'
 WHERE l.areasymbol = 'WI025'
+  -- First mineral surface horizon: skip organic/duff layers (SPM, HPM, MPM)
+  AND ch.hzdept_r = (
+    SELECT MIN(ch2.hzdept_r)
+    FROM chorizon ch2
+    INNER JOIN chtexturegrp tg2 ON tg2.chkey = ch2.chkey
+    WHERE ch2.cokey = c.cokey
+      AND tg2.rvindicator = 'Yes'
+      AND tg2.texture NOT IN ('SPM','HPM','MPM')
+  )
 ORDER BY mu.musym, c.comppct_r DESC</textarea>
         <div class="sql-result"></div>
       </div>
