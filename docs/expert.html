@@ -26,16 +26,16 @@
 <section class="hero darker">
   <div class="hero-grid-bg"></div>
   <div class="hero-inner">
-    <div class="eyebrow"><span class="lesson-tag tag-expert" style="display:inline">EXPERT</span> SQL Track · 5 Lessons</div>
+    <div class="eyebrow"><span class="lesson-tag tag-expert" style="display:inline">EXPERT</span> SQL Track · 7 Lessons</div>
     <h1>Expert SQL<br><em>Track</em></h1>
-    <p class="lead">Production-grade SSURGO queries: soil organic carbon, NCCPI, interpretations, dominant condition method, and spatial AOI. Five advanced lessons.</p>
+    <p class="lead">Production-grade SSURGO queries: soil organic carbon, NCCPI, interpretations, dominant condition method, spatial AOI, KSSL lab SOC cascade, and SHAPE scoring groups. Seven advanced lessons.</p>
   </div>
 </section>
 
 <section class="section">
   <div class="progress-bar reveal">
     <span class="pb-label">Lessons</span>
-    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
+    <span class="pb-dot active"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span><span class="pb-dot"></span>
   </div>
 
   <!-- Lesson 1 -->
@@ -265,6 +265,170 @@ ORDER BY mu.muacres DESC, c.comppct_r DESC</textarea>
         <div class="sql-result"></div>
       </div>
       <div class="note" style="margin-top:12px">For full spatial AOI workflows, see the <a href="https://sdmdataaccess.nrcs.usda.gov/documents/AdvancedSpatialDataAccess.pdf" target="_blank">Advanced Spatial Data Access PDF</a> — the definitive guide to WKT geometry queries.</div>
+    </div>
+  </div>
+
+  <!-- Lesson 6 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">06</span>
+      <div class="lesson-title"><h3>KSSL Lab SOC — The 4-Method Cascade</h3><p>How DSPHub estimates soil organic carbon when measurements vary</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>The Kellogg Soil Survey Laboratory (KSSL) doesn't always have the same measurements for every pedon. DSPHub solves this with a prioritized cascade: use the best available method, fall through to the next when data is missing.</p>
+      <div class="tip"><strong>4-Method Priority:</strong>
+        <ol style="padding-left:20px;margin-top:8px;line-height:2.2;font-size:.88rem">
+          <li><code>estimated_organic_carbon</code> — Direct KSSL estimate (best)</li>
+          <li><code>total_carbon_ncs − (caco3_lt_2_mm × 0.12)</code> — Subtract inorganic CaCO₃</li>
+          <li><code>total_carbon_ncs</code> — Use total C when no CaCO₃ data</li>
+          <li><code>0.25 + organic_carbon_walkley_black × 0.86</code> — Walkley-Black correction</li>
+        </ol>
+      </div>
+      <p>This cascade appears in DSPHub's <a href="https://github.com/jneme910/DSPHub/blob/main/script/comet/Top%20Combined%20Estimated%20Organic%20Carbon.sql" target="_blank" rel="noopener">Top Combined Estimated Organic Carbon.sql</a> and is the same logic SHAPE uses to derive soil organic carbon from KSSL data.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">KSSL SOC — 4-Method Cascade, Surface Horizon (Kansas) — DSPHub</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">-- KSSL Lab SOC -- 4-Method Cascade (Surface Horizon)
+-- Change area_code = 'KS' to any two-letter state abbreviation.
+-- Source: DSPHub / Top Combined Estimated Organic Carbon.sql
+SELECT TOP 50
+  lp.pedlabsampnum,
+  CASE WHEN lcnn.corr_name IS NULL
+       THEN lcnn.samp_name
+       ELSE upper(substring(lcnn.corr_name,1,1))
+          + lower(substring(lcnn.corr_name,2,120))
+  END AS soil_name,
+  la_st.area_name  AS state_name,
+  la_ct.area_name  AS county_name,
+  lcnn.latitude_decimal_degrees  AS lat,
+  lcnn.longitude_decimal_degrees AS lon,
+  -- 4-method SOC estimation cascade
+  CASE
+    WHEN lcp.estimated_organic_carbon IS NOT NULL
+         THEN lcp.estimated_organic_carbon
+    WHEN lcp.caco3_lt_2_mm IS NOT NULL
+         THEN lcp.total_carbon_ncs - (lcp.caco3_lt_2_mm * 0.12)
+    WHEN lcp.total_carbon_ncs IS NOT NULL
+         THEN lcp.total_carbon_ncs
+    WHEN lcp.organic_carbon_walkley_black IS NOT NULL
+         THEN 0.25 + lcp.organic_carbon_walkley_black * 0.86
+  END AS calc_soc_pct,
+  CASE
+    WHEN lcp.estimated_organic_carbon IS NOT NULL
+         THEN 'Direct KSSL estimate'
+    WHEN lcp.caco3_lt_2_mm IS NOT NULL
+         THEN 'TotalC - CaCO3 x 0.12'
+    WHEN lcp.total_carbon_ncs IS NOT NULL
+         THEN 'Total C (no CaCO3 data)'
+    WHEN lcp.organic_carbon_walkley_black IS NOT NULL
+         THEN 'Walkley-Black: 0.25 + WB x 0.86'
+  END AS method_used
+FROM lab_combine_nasis_ncss lcnn
+INNER JOIN lab_pedon lp
+       ON lp.pedon_key = lcnn.pedon_key
+INNER JOIN lab_layer ll
+       ON ll.pedon_key = lcnn.pedon_key AND ll.hzn_top = 0
+INNER JOIN lab_chemical_properties lcp
+       ON lcp.labsampnum = ll.labsampnum
+INNER JOIN lab_area la_st
+       ON la_st.area_key = lcnn.state_key
+      AND la_st.area_type = 'state_admin_div'
+INNER JOIN lab_area la_ct
+       ON la_ct.area_key = lcnn.county_key
+WHERE la_st.area_code = 'KS'
+  AND (
+    lcp.estimated_organic_carbon IS NOT NULL OR
+    lcp.total_carbon_ncs IS NOT NULL OR
+    lcp.organic_carbon_walkley_black IS NOT NULL
+  )
+ORDER BY lp.pedlabsampnum</textarea>
+        <div class="sql-result"></div>
+      </div>
+      <div class="note" style="margin-top:12px">Full DSPHub script with all KSSL characterization fields (texture, bulk density, CaCO₃, Walkley-Black, clay fractions): <a href="https://github.com/jneme910/DSPHub/blob/main/script/shape/DSP_KSSL_SOC.sql" target="_blank" rel="noopener">DSP_KSSL_SOC.sql ↗</a></div>
+    </div>
+  </div>
+
+  <!-- Lesson 7 -->
+  <div class="lesson reveal">
+    <div class="lesson-header">
+      <span class="lesson-num">07</span>
+      <div class="lesson-title"><h3>SHAPE Scoring Groups — T1–T5 &amp; S1–S5</h3><p>Classifying soils so the right SHAPE curve applies</p></div>
+      <span class="lesson-tag tag-expert">Expert</span>
+      <span class="lesson-expand">▼</span>
+    </div>
+    <div class="lesson-body">
+      <p>SHAPE doesn't use one universal curve. Before scoring, every soil is classified into a <strong>texture group (T1–T5)</strong> based on surface texture and a <strong>suborder group (S1–S5)</strong> based on taxonomic suborder. These two axes select the right benchmark for that soil type.</p>
+      <div class="tip">
+        <strong>Texture Groups:</strong> T1=Sandy · T2=Sandy Loam · T3=Silty · T4=Clay Loam · T5=Heavy Clay (&gt;60%)<br>
+        <strong>Suborder Groups:</strong> S1=Organic/Wet · S2=Aquic/Volcanic · S3=Mollisols/Spodosols · S4=Alfisols/Vertisols · S5=Arid/Erosional
+      </div>
+      <p>Source: <a href="https://github.com/jneme910/DSPHub/blob/main/script/shape/DSP_Point_SDA_intersect.sql" target="_blank" rel="noopener">DSPHub / DSP_Point_SDA_intersect.sql ↗</a> — the full version uses spatial geometry to find the map unit at a point, then derives T and S groups.</p>
+      <div class="sql-panel">
+        <div class="sql-toolbar">
+          <span class="sql-toolbar-label">SHAPE T1–T5 Texture and S1–S5 Suborder Groups — WI025</span>
+          <button class="btn-copy">Copy</button>
+          <button class="btn-run">▶ Run on SDA</button>
+        </div>
+        <textarea class="sql-editor">-- SHAPE Texture Groups (T1-T5) and Soil Suborder Groups (S1-S5)
+-- Source: DSPHub / DSP_Point_SDA_intersect.sql (jneme910/DSPHub)
+-- Change areasymbol to any survey area.
+SELECT TOP 30
+  l.areasymbol,
+  mu.musym,
+  mu.muname,
+  c.compname,
+  c.comppct_r,
+  c.taxsuborder,
+  tg.texture        AS surface_texture,
+  ch.claytotal_r    AS clay_pct,
+  -- SHAPE Texture Group (T1-T5)
+  CASE
+    WHEN tg.texture IN ('S','LS')                           THEN 'T1 Sandy'
+    WHEN tg.texture = 'SL' AND ch.claytotal_r <  8         THEN 'T1 Sandy'
+    WHEN tg.texture = 'SL' AND ch.claytotal_r >= 8         THEN 'T2 Sandy Loam'
+    WHEN tg.texture IN ('SCL','L')                          THEN 'T2 Sandy Loam'
+    WHEN tg.texture IN ('SIL','SI')                         THEN 'T3 Silty'
+    WHEN tg.texture IN ('SC','CL','SICL','SIC')             THEN 'T4 Clay Loam'
+    WHEN tg.texture = 'C' AND ch.claytotal_r <  60         THEN 'T4 Clay Loam'
+    WHEN tg.texture = 'C' AND ch.claytotal_r >= 60         THEN 'T5 Heavy Clay'
+    ELSE 'Unclassified'
+  END AS shape_texture_group,
+  -- SHAPE Soil Suborder Group (S1-S5)
+  CASE
+    WHEN c.taxsuborder IN ('Fribists','Folists','Hemists','Histels','Saprists','Wassists')
+         THEN 'S1 Organic'
+    WHEN c.taxsuborder IN ('Aquands','Aquents','Aquepts','Aquods','Aquoxs','Cryods',
+         'Humods','Orthels','Peroxs','Torrands','Tropepts','Turbels','Udands',
+         'Udoxs','Ustands')
+         THEN 'S2 Aquic/Volcanic'
+    WHEN c.taxsuborder IN ('Albolls','Andepts','Aquolls','Aquults','Cryands','Cryepts',
+         'Cryolls','Gelepts','Gelolls','Humults','Rendolls','Umbrepts','Ustoxs',
+         'Vitrands','Wassents','Xerands')
+         THEN 'S3 Mollisols/Spodosols'
+    WHEN c.taxsuborder IN ('Aqualfs','Aquerts','Boralfs','Borolls','Cryalfs','Ochrepts',
+         'Orthods','Orthoxs','Udalfs','Udepts','Uderts','Udolls','Usterts','Ustolls',
+         'Xeralfs','Xerepts','Xerolls','Xerults')
+         THEN 'S4 Alfisols/Vertisols'
+    WHEN c.taxsuborder IN ('Arents','Argids','Calcids','Cambids','Cryerts','Cryids',
+         'Durids','Fluvents','Gypsids','Orthents','Orthids','Psamments','Salids',
+         'Torrerts','Torroxs','Udults','Ustalfs','Ustepts','Ustults')
+         THEN 'S5 Arid/Erosional'
+    ELSE 'Unclassified'
+  END AS shape_suborder_group
+FROM legend l
+INNER JOIN mapunit   mu ON mu.lkey  = l.lkey
+INNER JOIN component  c ON c.mukey  = mu.mukey AND c.majcompflag = 'Yes'
+INNER JOIN chorizon  ch ON ch.cokey = c.cokey  AND ch.hzdept_r   = 0
+INNER JOIN chtexturegrp tg ON tg.chkey = ch.chkey AND tg.rvindicator = 'Yes'
+WHERE l.areasymbol = 'WI025'
+ORDER BY mu.musym, c.comppct_r DESC</textarea>
+        <div class="sql-result"></div>
+      </div>
     </div>
   </div>
 
